@@ -62,6 +62,8 @@ export function HeroSlideshow() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, go]);
 
+  const active = SLIDES[index] ?? SLIDES[0]!;
+
   return (
     <section
       id="home"
@@ -99,19 +101,19 @@ export function HeroSlideshow() {
             className="animate-fade-up block text-xs font-bold tracking-[0.25em] text-accent"
             style={{ animationDelay: "80ms" }}
           >
-            {SLIDES[index].kicker}
+            {active.kicker}
           </span>
           <h1
             className="animate-fade-up mt-4 text-4xl leading-tight font-extrabold text-primary-foreground sm:text-5xl lg:text-6xl"
             style={{ animationDelay: "180ms" }}
           >
-            {SLIDES[index].title}
+            {active.title}
           </h1>
           <p
             className="animate-fade-up mt-5 max-w-2xl text-base text-primary-foreground/85 sm:text-lg"
             style={{ animationDelay: "300ms" }}
           >
-            {SLIDES[index].text}
+            {active.text}
           </p>
           <div
             className="animate-fade-up mt-8 flex flex-wrap gap-3"
