@@ -125,9 +125,14 @@ function Index() {
     const email = String(data.get("email") ?? "").trim();
     const sector = String(data.get("sector") ?? "");
 
-    if (!name || name.length > 100) return toast.error("Please enter a valid name.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255)
-      return toast.error("Please enter a valid email address.");
+    if (!name || name.length > 100) {
+      toast.error("Please enter a valid name.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
 
     setSubmitting(true);
     window.setTimeout(() => {
