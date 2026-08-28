@@ -8,7 +8,10 @@ const NAV_ITEMS = [
   { label: "About Us", href: "#about", dot: "var(--chart-2)" },
   { label: "Sectors", href: "#sectors", dot: "var(--chart-3)" },
   { label: "Recent Work", href: "#work", dot: "var(--chart-4)" },
-  { label: "Global Reach", href: "#global", dot: "var(--chart-5)" },
+  { label: "Projects", href: "#projects", dot: "var(--chart-5)" },
+  { label: "Resource Center", href: "#resources", dot: "var(--chart-1)" },
+  { label: "News", href: "#news", dot: "var(--chart-3)" },
+  { label: "Partners", href: "#global", dot: "var(--chart-2)" },
 ];
 
 export function Navbar() {
