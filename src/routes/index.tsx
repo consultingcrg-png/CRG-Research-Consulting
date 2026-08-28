@@ -69,9 +69,9 @@ export const Route = createFileRoute("/")({
 });
 
 const STATS = [
-  { value: "2021", label: "Founded as Research Group" },
-  { value: "2025", label: "Evolved Global Consultancy" },
-  { value: "3", label: "Partner Hubs (Namibia, Kenya, Nigeria)" },
+  { value: "2021", label: "Founded as a Research Group" },
+  { value: "2025", label: "Evolved into a Global Consultancy" },
+  { value: "3", label: "Corporate Partners (Namibia, Kenya, Nigeria)" },
   { value: "11-50", label: "Expert Consultants & Researchers" },
 ];
 
@@ -235,12 +235,11 @@ function Index() {
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                GLOBAL FOOTPRINT
+                FOOTPRINT
               </span>
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Regional Hubs & Network</h2>
               <p className="mt-3 text-muted-foreground">
-                Headquartered in Windhoek with strategic partner companies across key regional
-                growth centers.
+                With strategic partner companies across key regional growth centers.
               </p>
             </Reveal>
 

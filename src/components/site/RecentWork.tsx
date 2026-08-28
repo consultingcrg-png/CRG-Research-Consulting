@@ -51,7 +51,7 @@ export function RecentWork() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <Reveal className="mt-12 rounded-xl border border-dashed border-border bg-card p-12 text-center">
+          <Reveal className="mt-12 rounded-xl border-2 border-dashed border-primary bg-card p-12 text-center">
             <p className="text-muted-foreground">
               New project updates will be published here soon.
             </p>
