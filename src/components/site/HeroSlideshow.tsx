@@ -37,7 +37,7 @@ const SLIDES = [
   },
 ];
 
-const DURATION = 6500;
+const DURATION = 8000;
 
 export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
@@ -129,7 +129,7 @@ export function HeroSlideshow() {
               href="#about"
               className="rounded-full border-2 border-primary-foreground/70 px-7 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground hover:text-primary"
             >
-              Learn More
+              Our History
             </a>
           </div>
         </div>

@@ -103,7 +103,7 @@ function AdminPortal() {
   if (isAdmin === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface px-5">
-        <div className="max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-card">
+        <div className="max-w-sm rounded-2xl border-2 border-primary bg-card p-8 text-center shadow-card">
           <ShieldAlert className="mx-auto size-8 text-destructive" />
           <h1 className="mt-4 text-lg font-bold">Not authorised</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -291,7 +291,7 @@ function WorkUpdatesPanel() {
       {formOpen && (
         <form
           onSubmit={onSubmit}
-          className="animate-fade-up space-y-4 rounded-xl border border-border bg-card p-6 shadow-card"
+          className="animate-fade-up space-y-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card"
         >
           <div>
             <Label htmlFor="title">Title *</Label>
@@ -393,7 +393,7 @@ function WorkUpdatesPanel() {
           {data.map((item) => (
             <li
               key={item.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-card"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -556,7 +556,7 @@ function EmployeeEmailsPanel() {
       {formOpen && (
         <form
           onSubmit={onSubmit}
-          className="animate-fade-up grid gap-4 rounded-xl border border-border bg-card p-6 shadow-card sm:grid-cols-2"
+          className="animate-fade-up grid gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card sm:grid-cols-2"
         >
           <div>
             <Label htmlFor="employee_name">Name *</Label>
@@ -612,7 +612,7 @@ function EmployeeEmailsPanel() {
           {data.map((item) => (
             <li
               key={item.id}
-              className="grid gap-4 rounded-xl border border-border bg-card p-5 shadow-card sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              className="grid gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

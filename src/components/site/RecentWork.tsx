@@ -51,7 +51,7 @@ export function RecentWork() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <Reveal className="mt-12 rounded-xl border border-dashed border-border bg-card p-12 text-center">
+          <Reveal className="mt-12 rounded-xl border-2 border-dashed border-primary bg-card p-12 text-center">
             <p className="text-muted-foreground">
               New project updates will be published here soon.
             </p>
@@ -60,7 +60,7 @@ export function RecentWork() {
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <Reveal key={item.id} delay={i * 90} as="article">
-                <article className="hover-lift flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+                <article className="hover-lift flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-card">
                   {item.image_urls[0] ? (
                     <div className="aspect-[16/10] overflow-hidden">
                       <img

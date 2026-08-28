@@ -69,9 +69,9 @@ export const Route = createFileRoute("/")({
 });
 
 const STATS = [
-  { value: "2021", label: "Founded as Research Group" },
-  { value: "2025", label: "Evolved Global Consultancy" },
-  { value: "3", label: "Partner Hubs (Namibia, Kenya, Nigeria)" },
+  { value: "2021", label: "Founded as a Research Group" },
+  { value: "2025", label: "Evolved into a Global Consultancy" },
+  { value: "3", label: "Corporate Partners (Namibia, Kenya, Nigeria)" },
   { value: "11-50", label: "Expert Consultants & Researchers" },
 ];
 
@@ -184,7 +184,7 @@ function Index() {
             <div className="grid gap-4">
               {PILLARS.map((pillar, i) => (
                 <Reveal key={pillar.title} delay={120 + i * 120}>
-                  <div className="hover-lift flex gap-4 rounded-xl border border-border bg-card p-6 shadow-card">
+                  <div className="hover-lift flex gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card">
                     <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent-gradient text-accent-foreground">
                       <pillar.icon className="size-6" />
                     </span>
@@ -216,7 +216,7 @@ function Index() {
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {SECTORS.map((sector, i) => (
                 <Reveal key={sector.title} delay={i * 70}>
-                  <div className="hover-lift group h-full rounded-xl border border-border bg-card p-6 text-center shadow-card">
+                  <div className="hover-lift group h-full rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card">
                     <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
                       <sector.icon className="size-6" />
                     </span>
@@ -230,24 +230,65 @@ function Index() {
 
         <RecentWork />
 
+        {/* Projects / Resource Center / News */}
+        <section className="py-20 lg:py-28">
+          <div className="mx-auto grid max-w-7xl gap-6 px-5 md:grid-cols-3 lg:px-8">
+            {[
+              {
+                id: "projects",
+                kicker: "PROJECTS",
+                title: "Projects",
+                text: "Detailed case studies of our commissioned assignments across land, energy, health and development.",
+              },
+              {
+                id: "resources",
+                kicker: "KNOWLEDGE",
+                title: "Resource Center",
+                text: "Reports, policy briefs, toolkits and datasets produced by our research teams.",
+              },
+              {
+                id: "news",
+                kicker: "UPDATES",
+                title: "News",
+                text: "Announcements, events and media coverage from across the CRG network.",
+              },
+            ].map((block, i) => (
+              <Reveal key={block.id} delay={i * 110}>
+                <section
+                  id={block.id}
+                  className="hover-lift h-full scroll-mt-24 rounded-xl border-2 border-primary bg-card p-8 shadow-card"
+                >
+                  <span className="text-xs font-bold tracking-[0.2em] text-accent">
+                    {block.kicker}
+                  </span>
+                  <h2 className="mt-2 text-2xl font-bold">{block.title}</h2>
+                  <p className="mt-3 text-sm text-muted-foreground">{block.text}</p>
+                  <p className="mt-4 text-xs font-semibold text-accent">Content coming soon</p>
+                </section>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+
+
         {/* Global reach */}
         <section id="global" className="py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                GLOBAL FOOTPRINT
+                FOOTPRINT
               </span>
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Regional Hubs & Network</h2>
               <p className="mt-3 text-muted-foreground">
-                Headquartered in Windhoek with strategic partner companies across key regional
-                growth centers.
+                With strategic partner companies across key regional growth centers.
               </p>
             </Reveal>
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {HUBS.map((hub, i) => (
                 <Reveal key={hub.title} delay={i * 120}>
-                  <div className="hover-lift rounded-xl border border-border bg-card p-8 shadow-card">
+                  <div className="hover-lift rounded-xl border-2 border-primary bg-card p-8 shadow-card">
                     <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
                       <MapPin className="size-6" />
                     </span>
@@ -307,7 +348,7 @@ function Index() {
                   },
                 ].map((item, i) => (
                   <Reveal key={item.label} delay={i * 100}>
-                    <div className="flex items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-card">
+                    <div className="flex items-start gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card">
                       <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-accent">
                         <item.icon className="size-5" />
                       </span>
@@ -324,7 +365,7 @@ function Index() {
             <Reveal delay={150}>
               <form
                 onSubmit={onSubmit}
-                className="rounded-2xl border border-border bg-card p-7 shadow-lift"
+                className="rounded-2xl border-2 border-primary bg-card p-7 shadow-lift"
               >
                 <h3 className="flex items-center gap-2 text-xl font-bold">
                   <Sparkles className="size-5 text-accent" /> Send a Message
