@@ -48,7 +48,10 @@ export function Navbar() {
             <a
               key={item.href}
               href={item.href}
-              className="nav-link rounded-full px-4 text-sm"
+              className={cn(
+                "nav-link rounded-full px-4 text-sm transition-colors duration-500",
+                scrolled ? "text-primary" : "text-primary-foreground",
+              )}
               style={{ "--nav-dot": item.dot } as CSSProperties}
             >
               {item.label}
@@ -67,7 +70,12 @@ export function Navbar() {
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="grid size-11 shrink-0 place-items-center rounded-full border border-border text-primary transition-colors hover:bg-secondary lg:hidden"
+          className={cn(
+            "grid size-11 shrink-0 place-items-center rounded-full border transition-colors duration-500 lg:hidden",
+            scrolled
+              ? "border-border text-primary hover:bg-secondary"
+              : "border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/20",
+          )}
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
