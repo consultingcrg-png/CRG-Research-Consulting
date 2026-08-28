@@ -3,4 +3,4 @@ Allow: /
 Disallow: /staff-access-crg
 Disallow: /crg-admin
 
-Sitemap: /sitemap.xml
+Sitemap: https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/sitemap.xml
