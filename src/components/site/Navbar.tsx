@@ -28,7 +28,7 @@ export function Navbar() {
         "fixed inset-x-0 top-0 z-50 transition-all duration-500",
         scrolled
           ? "bg-background/95 shadow-card backdrop-blur-md"
-          : "bg-background/70 backdrop-blur-sm",
+          : "bg-transparent",
       )}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 lg:px-8">
@@ -37,7 +37,7 @@ export function Navbar() {
             src={logo.url}
             alt="CRG Research & Consulting logo"
             className={cn(
-              "w-auto object-contain transition-all duration-500",
+              "w-auto object-contain transition-all duration-500 drop-shadow-lg",
               scrolled ? "h-10" : "h-12",
             )}
           />
