@@ -46,13 +46,13 @@ export function Navbar() {
           />
         </a>
 
-        <nav className="hidden items-center gap-2 lg:flex">
+        <nav className="hidden items-center gap-0.5 lg:flex">
           {NAV_ITEMS.map((item) => (
             <a
               key={item.href}
               href={item.href}
               className={cn(
-                "nav-link rounded-full px-4 text-sm transition-colors duration-500",
+                "nav-link rounded-full px-2.5 text-[13px] whitespace-nowrap transition-colors duration-500",
                 scrolled ? "text-primary" : "text-primary-foreground",
               )}
               style={{ "--nav-dot": item.dot } as CSSProperties}
@@ -62,7 +62,7 @@ export function Navbar() {
           ))}
           <a
             href="#contact"
-            className="ml-2 rounded-full bg-accent-gradient px-6 py-2.5 text-sm font-semibold text-accent-foreground shadow-card transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-lift"
+            className="ml-2 rounded-full bg-accent-gradient px-5 py-2.5 text-[13px] font-semibold text-accent-foreground shadow-card transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-lift"
           >
             Contact Us
           </a>
