@@ -230,6 +230,48 @@ function Index() {
 
         <RecentWork />
 
+        {/* Projects / Resource Center / News */}
+        <section className="py-20 lg:py-28">
+          <div className="mx-auto grid max-w-7xl gap-6 px-5 md:grid-cols-3 lg:px-8">
+            {[
+              {
+                id: "projects",
+                kicker: "PROJECTS",
+                title: "Projects",
+                text: "Detailed case studies of our commissioned assignments across land, energy, health and development.",
+              },
+              {
+                id: "resources",
+                kicker: "KNOWLEDGE",
+                title: "Resource Center",
+                text: "Reports, policy briefs, toolkits and datasets produced by our research teams.",
+              },
+              {
+                id: "news",
+                kicker: "UPDATES",
+                title: "News",
+                text: "Announcements, events and media coverage from across the CRG network.",
+              },
+            ].map((block, i) => (
+              <Reveal key={block.id} delay={i * 110}>
+                <section
+                  id={block.id}
+                  className="hover-lift h-full scroll-mt-24 rounded-xl border-2 border-primary bg-card p-8 shadow-card"
+                >
+                  <span className="text-xs font-bold tracking-[0.2em] text-accent">
+                    {block.kicker}
+                  </span>
+                  <h2 className="mt-2 text-2xl font-bold">{block.title}</h2>
+                  <p className="mt-3 text-sm text-muted-foreground">{block.text}</p>
+                  <p className="mt-4 text-xs font-semibold text-accent">Content coming soon</p>
+                </section>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+
+
         {/* Global reach */}
         <section id="global" className="py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
