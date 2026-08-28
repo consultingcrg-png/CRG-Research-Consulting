@@ -184,7 +184,7 @@ function Index() {
             <div className="grid gap-4">
               {PILLARS.map((pillar, i) => (
                 <Reveal key={pillar.title} delay={120 + i * 120}>
-                  <div className="hover-lift flex gap-4 rounded-xl border border-border bg-card p-6 shadow-card">
+                  <div className="hover-lift flex gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card">
                     <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent-gradient text-accent-foreground">
                       <pillar.icon className="size-6" />
                     </span>
@@ -216,7 +216,7 @@ function Index() {
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {SECTORS.map((sector, i) => (
                 <Reveal key={sector.title} delay={i * 70}>
-                  <div className="hover-lift group h-full rounded-xl border border-border bg-card p-6 text-center shadow-card">
+                  <div className="hover-lift group h-full rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card">
                     <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
                       <sector.icon className="size-6" />
                     </span>
@@ -247,7 +247,7 @@ function Index() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {HUBS.map((hub, i) => (
                 <Reveal key={hub.title} delay={i * 120}>
-                  <div className="hover-lift rounded-xl border border-border bg-card p-8 shadow-card">
+                  <div className="hover-lift rounded-xl border-2 border-primary bg-card p-8 shadow-card">
                     <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
                       <MapPin className="size-6" />
                     </span>
@@ -307,7 +307,7 @@ function Index() {
                   },
                 ].map((item, i) => (
                   <Reveal key={item.label} delay={i * 100}>
-                    <div className="flex items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-card">
+                    <div className="flex items-start gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card">
                       <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-accent">
                         <item.icon className="size-5" />
                       </span>
@@ -324,7 +324,7 @@ function Index() {
             <Reveal delay={150}>
               <form
                 onSubmit={onSubmit}
-                className="rounded-2xl border border-border bg-card p-7 shadow-lift"
+                className="rounded-2xl border-2 border-primary bg-card p-7 shadow-lift"
               >
                 <h3 className="flex items-center gap-2 text-xl font-bold">
                   <Sparkles className="size-5 text-accent" /> Send a Message

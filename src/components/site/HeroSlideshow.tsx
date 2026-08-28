@@ -37,7 +37,7 @@ const SLIDES = [
   },
 ];
 
-const DURATION = 6500;
+const DURATION = 8000;
 
 export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
