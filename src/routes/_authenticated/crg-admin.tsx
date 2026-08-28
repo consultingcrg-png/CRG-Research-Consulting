@@ -266,7 +266,7 @@ function WorkUpdatesPanel() {
       return;
     }
     save.mutate({
-      id: editing?.id,
+      ...(editing ? { id: editing.id } : {}),
       title,
       description,
       image_urls: images,
@@ -526,7 +526,7 @@ function EmployeeEmailsPanel() {
       return;
     }
     save.mutate({
-      id: editing?.id,
+      ...(editing ? { id: editing.id } : {}),
       employee_name,
       email_address,
       department: String(f.get("department") ?? "").trim() || null,
