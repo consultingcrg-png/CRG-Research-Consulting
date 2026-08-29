@@ -1,35 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
-import slide1 from "@/assets/image-8.jpeg.asset.json";
-import slide2 from "@/assets/image-5.jpeg.asset.json";
-import slide3 from "@/assets/image-3.jpeg.asset.json";
-import slide4 from "@/assets/image-4.jpeg.asset.json";
 
 const SLIDES = [
   {
-    url: slide1.url,
+    url: "/images/image-8.jpeg",
     alt: "CRG delegates at the International Federation of Surveyors sustainable development goals exhibition",
     kicker: "GLOBAL ENGAGEMENT",
     title: "Transformative Research & Strategic Consulting",
     text: "Evidence-based solutions across global industries, unlocking sustainable growth and measurable impact.",
   },
   {
-    url: slide2.url,
+    url: "/images/image-5.jpeg",
     alt: "CRG team meeting with UN-Habitat representatives",
     kicker: "PARTNERSHIPS",
     title: "Working With Global Development Partners",
     text: "Collaborating with UN agencies, governments and institutions to shape inclusive urban and land policy.",
   },
   {
-    url: slide3.url,
+    url: "/images/image-3.jpeg",
     alt: "CRG researchers attending an international conference",
     kicker: "OUR PEOPLE",
     title: "Researchers, Analysts & Sector Specialists",
     text: "A multidisciplinary team turning rigorous field evidence into strategy leaders can act on.",
   },
   {
-    url: slide4.url,
+    url: "/images/image-4.jpeg",
     alt: "CRG field research team with community stakeholders",
     kicker: "FIELDWORK",
     title: "Grounded in Communities We Serve",
@@ -42,29 +38,36 @@ const DURATION = 8000;
 export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  // Slides that have been reached at least once; only these get their <img> src.
+  // Slides that have been loaded or primed for preloading
   const [loaded, setLoaded] = useState<number[]>([0, 1]);
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const go = useCallback((next: number) => {
-    const target = (next + SLIDES.length) % SLIDES.length;
+    const total = SLIDES.length;
+    const target = ((next % total) + total) % total;
     setIndex(target);
-    // Preload the following slide so the crossfade is always ready.
-    const following = (target + 1) % SLIDES.length;
-    setLoaded((prev) =>
-      prev.includes(target) && prev.includes(following)
+    // Preload current, next, and previous slides to ensure smooth crossfade
+    const following = (target + 1) % total;
+    const previous = (target - 1 + total) % total;
+    setLoaded((prev) => {
+      const needed = [target, following, previous];
+      return needed.every((i) => prev.includes(i))
         ? prev
-        : Array.from(new Set([...prev, target, following])),
-    );
+        : Array.from(new Set([...prev, ...needed]));
+    });
   }, []);
 
-  // Continuous loop, restarted cleanly on every index change.
+  // Continuous 8-second loop, cleanly restarted on index or pause state change
   useEffect(() => {
     if (paused) return;
-    const t = window.setTimeout(() => go(index + 1), DURATION);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => {
+      go(index + 1);
+    }, DURATION);
+    return () => window.clearTimeout(timer);
   }, [index, paused, go]);
 
+  // Keyboard navigation for accessibility
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") go(index + 1);
@@ -74,7 +77,7 @@ export function HeroSlideshow() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, go]);
 
-  // Pause while the tab is hidden so the loop never "jumps" on return.
+  // Pause when the tab is hidden so the 8-second loop resumes smoothly upon return
   useEffect(() => {
     const onVisibility = () => setPaused(document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
@@ -88,47 +91,62 @@ export function HeroSlideshow() {
       id="home"
       aria-roledescription="carousel"
       aria-label="CRG Research & Consulting highlights"
-      className="relative isolate min-h-[100svh] w-full overflow-hidden"
+      className="relative isolate min-h-[100svh] w-full overflow-hidden select-none"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => {
         touchStartX.current = e.touches[0]?.clientX ?? null;
+        touchStartY.current = e.touches[0]?.clientY ?? null;
       }}
       onTouchEnd={(e) => {
-        const start = touchStartX.current;
-        const end = e.changedTouches[0]?.clientX ?? null;
+        const startX = touchStartX.current;
+        const startY = touchStartY.current;
+        const endX = e.changedTouches[0]?.clientX ?? null;
+        const endY = e.changedTouches[0]?.clientY ?? null;
         touchStartX.current = null;
-        if (start === null || end === null) return;
-        const delta = end - start;
-        if (Math.abs(delta) > 50) go(index + (delta < 0 ? 1 : -1));
+        touchStartY.current = null;
+
+        if (startX === null || endX === null || startY === null || endY === null) return;
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+
+        // Ensure horizontal swipe is dominant before changing slides
+        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+          go(index + (deltaX < 0 ? 1 : -1));
+        }
       }}
     >
-      {SLIDES.map((slide, i) => (
-        <div
-          key={slide.url}
-          aria-hidden={i !== index}
-          className={cn(
-            "absolute inset-0 transition-opacity duration-[1200ms] ease-out",
-            i === index ? "opacity-100" : "opacity-0",
-          )}
-        >
-          {loaded.includes(i) && (
-            <img
-              src={slide.url}
-              alt={slide.alt}
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding={i === 0 ? "sync" : "async"}
-              fetchPriority={i === 0 ? "high" : "low"}
-              draggable={false}
-              className={cn(
-                "size-full object-cover object-center",
-                i === index && "animate-slow-zoom",
-              )}
-            />
-          )}
-          <div className="absolute inset-0 bg-hero-gradient" />
-        </div>
-      ))}
+      {SLIDES.map((slide, i) => {
+        const isCurrent = i === index;
+        const isPrimed = loaded.includes(i);
+
+        return (
+          <div
+            key={slide.url}
+            aria-hidden={!isCurrent}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-[1200ms] ease-in-out will-change-[opacity]",
+              isCurrent ? "opacity-100 z-0" : "opacity-0 -z-10 pointer-events-none",
+            )}
+          >
+            {isPrimed && (
+              <img
+                src={slide.url}
+                alt={slide.alt}
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={i === 0 ? "high" : "low"}
+                draggable={false}
+                className={cn(
+                  "size-full object-cover object-center transform-gpu",
+                  isCurrent && "animate-slow-zoom",
+                )}
+              />
+            )}
+            <div className="absolute inset-0 bg-hero-gradient" />
+          </div>
+        );
+      })}
 
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-center px-5 pt-28 pb-32 sm:pb-28 lg:px-8">
         <div key={index} className="max-w-3xl">
@@ -155,27 +173,27 @@ export function HeroSlideshow() {
             style={{ animationDelay: "420ms" }}
           >
             <a
-              href="#sectors"
+              href="#services"
               className="rounded-full bg-accent-gradient px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lift transition-transform duration-300 hover:-translate-y-0.5 sm:px-7"
             >
-              Our Expertise
+              Our Services
             </a>
             <a
-              href="#about"
+              href="#sectors"
               className="rounded-full border-2 border-primary-foreground/70 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground hover:text-primary sm:px-7"
             >
-              Our History
+              Key Sectors
             </a>
           </div>
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Desktop Navigation Arrows */}
       <button
         type="button"
         aria-label="Previous slide"
         onClick={() => go(index - 1)}
-        className="absolute top-1/2 left-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:left-6"
+        className="absolute top-1/2 left-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:left-6 touch-manipulation"
       >
         <ChevronLeft className="size-5" />
       </button>
@@ -183,34 +201,45 @@ export function HeroSlideshow() {
         type="button"
         aria-label="Next slide"
         onClick={() => go(index + 1)}
-        className="absolute top-1/2 right-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:right-6"
+        className="absolute top-1/2 right-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:right-6 touch-manipulation"
       >
         <ChevronRight className="size-5" />
       </button>
 
-      {/* Progress indicators */}
-      <div className="absolute bottom-6 left-1/2 z-20 flex w-[min(90%,26rem)] -translate-x-1/2 gap-2 sm:bottom-8 sm:gap-3">
-        {SLIDES.map((slide, i) => (
-          <button
-            key={slide.url}
-            type="button"
-            aria-label={`Go to slide ${i + 1}`}
-            aria-current={i === index}
-            onClick={() => go(i)}
-            className="group h-1.5 flex-1 overflow-hidden rounded-full bg-primary-foreground/30"
-          >
-            <span
-              key={`${i}-${index}-${paused}`}
-              className={cn(
-                "block h-full origin-left rounded-full bg-accent",
-                i === index && !paused && "animate-bar",
-                i === index && paused && "scale-x-100",
-                i !== index && "scale-x-0",
-              )}
-              style={{ animationDuration: `${DURATION}ms` }}
-            />
-          </button>
-        ))}
+      {/* Progress indicators - Responsive & Smooth across mobile & desktop */}
+      <div className="absolute bottom-6 left-1/2 z-20 flex w-[min(90%,28rem)] -translate-x-1/2 items-center gap-2.5 sm:bottom-8 sm:gap-3">
+        <button
+          type="button"
+          aria-label={paused ? "Resume slideshow autoplay" : "Pause slideshow autoplay"}
+          onClick={() => setPaused((p) => !p)}
+          className="grid size-7 shrink-0 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground/85 backdrop-blur-sm transition-all hover:bg-primary-foreground/20 hover:text-primary-foreground"
+        >
+          {paused ? <Play className="ml-0.5 size-3.5 fill-current" /> : <Pause className="size-3.5 fill-current" />}
+        </button>
+
+        <div className="flex flex-1 items-center gap-2 sm:gap-2.5">
+          {SLIDES.map((slide, i) => (
+            <button
+              key={slide.url}
+              type="button"
+              aria-label={`Go to slide ${i + 1}`}
+              aria-current={i === index}
+              onClick={() => go(i)}
+              className="group h-1.5 flex-1 overflow-hidden rounded-full bg-primary-foreground/30 touch-manipulation transition-opacity hover:opacity-80"
+            >
+              <span
+                key={`${i}-${index}-${paused}`}
+                className={cn(
+                  "block h-full origin-left rounded-full bg-accent will-change-transform",
+                  i === index && !paused && "animate-bar",
+                  i === index && paused && "scale-x-100",
+                  i !== index && "scale-x-0",
+                )}
+                style={{ animationDuration: `${DURATION}ms` }}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

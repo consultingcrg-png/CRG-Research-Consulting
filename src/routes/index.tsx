@@ -1,21 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import {
+  BarChart3,
   Bolt,
   Briefcase,
+  CheckCircle2,
+  Compass,
   Earth,
+  Fuel,
   Gem,
+  GraduationCap,
   HandshakeIcon,
   HeartPulse,
+  Layers,
   Lightbulb,
   MapPin,
   Microscope,
   Phone,
   Plane,
+  SearchCheck,
   ShieldHalf,
   Sparkles,
   TreePine,
-  Fuel,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/site/Navbar";
@@ -27,6 +33,9 @@ import { Reveal } from "@/components/site/Reveal";
 const TITLE = "CRG Research & Consulting | Research & Strategy, Windhoek Namibia";
 const DESCRIPTION =
   "CRG Research & Consulting delivers evidence-based research and strategic advisory across land, energy, mining, health and international development in Namibia, Kenya and Nigeria.";
+const CANONICAL_URL = "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/";
+const OG_IMAGE_URL =
+  "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,12 +45,26 @@ export const Route = createFileRoute("/")({
       {
         name: "keywords",
         content:
-          "research consultancy Namibia, strategic consulting Windhoek, land and natural resources research, international development consulting Africa",
+          "CRG Research and Consulting, research consultancy Namibia, strategic consulting Windhoek, land and natural resources research, international development consulting Africa, policy research Namibia",
       },
+      { property: "og:site_name", content: "CRG Research & Consulting" },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: CANONICAL_URL },
+      { property: "og:image", content: OG_IMAGE_URL },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "CRG Research & Consulting Team and Global Advisory" },
+      { property: "og:locale", content: "en_US" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: TITLE },
+      { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:image", content: OG_IMAGE_URL },
+      { name: "twitter:image:alt", content: "CRG Research & Consulting" },
+    ],
+    links: [
+      { rel: "canonical", href: CANONICAL_URL },
     ],
     scripts: [
       {
@@ -51,14 +74,26 @@ export const Route = createFileRoute("/")({
           "@type": "ProfessionalService",
           name: "CRG Research & Consulting",
           description: DESCRIPTION,
+          url: CANONICAL_URL,
+          image: OG_IMAGE_URL,
           telephone: "+264 81 3288657",
-          areaServed: ["Namibia", "Kenya", "Nigeria"],
+          areaServed: [
+            { "@type": "Country", name: "Namibia" },
+            { "@type": "Country", name: "Kenya" },
+            { "@type": "Country", name: "Nigeria" },
+          ],
           foundingDate: "2021",
           address: {
             "@type": "PostalAddress",
             streetAddress: "6 Luther Street, The Village, Eros",
             addressLocality: "Windhoek",
+            addressRegion: "Khomas",
             addressCountry: "NA",
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: -22.5609,
+            longitude: 17.0898,
           },
           sameAs: ["https://www.linkedin.com/company/crg-research-consulting/"],
         }),
@@ -71,8 +106,47 @@ export const Route = createFileRoute("/")({
 const STATS = [
   { value: "2021", label: "Founded as a Research Group" },
   { value: "2025", label: "Evolved into a Global Consultancy" },
-  { value: "3", label: "Corporate Partners (Namibia, Kenya, Nigeria)" },
+  { value: "3", label: "(Namibia, Kenya and Nigeria)" },
   { value: "11-50", label: "Expert Consultants & Researchers" },
+];
+
+const SERVICES = [
+  {
+    icon: Compass,
+    title: "Strategic & Policy Advisory",
+    description:
+      "Evidence-based policy formulation, institutional reform strategies, and governance advisory for governments, international development partners, and private institutions.",
+  },
+  {
+    icon: SearchCheck,
+    title: "Fieldwork & Primary Research",
+    description:
+      "Comprehensive quantitative and qualitative field research, household surveys, community consultations, and baseline assessments across Africa.",
+  },
+  {
+    icon: BarChart3,
+    title: "Sector & Feasibility Studies",
+    description:
+      "Techno-economic evaluations, market entry analyses, regulatory reviews, and socio-economic impact assessments across emerging sectors.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Monitoring, Evaluation & Learning (MEL)",
+    description:
+      "Robust M&E frameworks, outcome tracking, mid-term and end-line evaluations, and learning agendas to maximize programme accountability.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Capacity Building & Training",
+    description:
+      "Tailored executive workshops, policy toolkits, institutional development programmes, and skills transfer to empower local teams.",
+  },
+  {
+    icon: Layers,
+    title: "Data Analytics & Geospatial Intelligence",
+    description:
+      "Advanced GIS mapping, spatial modeling, survey data analytics, and actionable dashboards turning complex field data into strategic decisions.",
+  },
 ];
 
 const PILLARS = [
@@ -112,7 +186,7 @@ const HUBS = [
 
 const SECTOR_OPTIONS = SECTORS.map((s) => s.title);
 
-const MAP_QUERY = "6 Luther Street, The Village, Eros, Windhoek, Namibia";
+const MAP_QUERY = "6 Luther Street, The Village, Eros Windhoek, Namibia";
 
 function Index() {
   const [submitting, setSubmitting] = useState(false);
@@ -199,8 +273,41 @@ function Index() {
           </div>
         </section>
 
+        {/* Services */}
+        <section id="services" className="scroll-mt-24 py-20 lg:py-28">
+          <div className="mx-auto max-w-7xl px-5 lg:px-8">
+            <Reveal className="mx-auto max-w-2xl text-center">
+              <span className="text-xs font-bold tracking-[0.2em] text-accent">
+                WHAT WE DO
+              </span>
+              <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Our Services</h2>
+              <p className="mt-3 text-muted-foreground">
+                Delivering tailored, evidence-led consulting and analytical services that drive sustainable development and high-impact policy decisions.
+              </p>
+            </Reveal>
+
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {SERVICES.map((service, i) => (
+                <Reveal key={service.title} delay={i * 80}>
+                  <div className="hover-lift group flex h-full flex-col justify-between rounded-xl border-2 border-primary bg-card p-7 shadow-card">
+                    <div>
+                      <span className="grid size-12 place-items-center rounded-lg bg-accent-gradient text-accent-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        <service.icon className="size-6" />
+                      </span>
+                      <h3 className="mt-5 text-lg font-bold text-primary">{service.title}</h3>
+                      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+                        {service.description}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Sectors */}
-        <section id="sectors" className="bg-surface py-20 lg:py-28">
+        <section id="sectors" className="scroll-mt-24 bg-surface py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <Reveal className="mx-auto max-w-2xl text-center">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
@@ -230,7 +337,7 @@ function Index() {
 
         <RecentWork />
 
-        {/* Projects / Resource Center / News */}
+        {/* Projects / Resources / News */}
         <section className="py-20 lg:py-28">
           <div className="mx-auto grid max-w-7xl gap-6 px-5 md:grid-cols-3 lg:px-8">
             {[
@@ -243,7 +350,7 @@ function Index() {
               {
                 id: "resources",
                 kicker: "KNOWLEDGE",
-                title: "Resource Center",
+                title: "Resources",
                 text: "Reports, policy briefs, toolkits and datasets produced by our research teams.",
               },
               {
@@ -270,16 +377,14 @@ function Index() {
           </div>
         </section>
 
-
-
-        {/* Global reach */}
-        <section id="global" className="py-20 lg:py-28">
+        {/* Partners */}
+        <section id="partners" className="scroll-mt-24 py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                FOOTPRINT
+                PARTNERS
               </span>
-              <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Regional Hubs & Network</h2>
+              <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Partners</h2>
               <p className="mt-3 text-muted-foreground">
                 With strategic partner companies across key regional growth centers.
               </p>
@@ -301,26 +406,27 @@ function Index() {
 
             {/* Google Maps */}
             <Reveal className="mt-14">
-              <div className="overflow-hidden rounded-2xl border border-border shadow-card">
+              <div className="relative w-full overflow-hidden rounded-2xl border border-border shadow-card bg-muted">
                 <iframe
-                  title="CRG Research & Consulting office location on Google Maps"
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`}
+                  title="CRG Research & Consulting office location at 6 Luther Street, The Village, Eros Windhoek, Namibia"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  className="h-[380px] w-full border-0 sm:h-[440px]"
+                  allowFullScreen
+                  className="h-[300px] sm:h-[400px] lg:h-[460px] w-full border-0"
                 />
               </div>
               <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="size-4 text-accent" />
-                {MAP_QUERY}
+                <MapPin className="size-4 shrink-0 text-accent" />
+                <span className="font-medium text-foreground">{MAP_QUERY}</span>
               </p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block text-sm font-semibold text-accent underline-offset-4 hover:underline"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-accent underline-offset-4 hover:underline"
               >
-                Get directions
+                Get directions on Google Maps
               </a>
             </Reveal>
           </div>

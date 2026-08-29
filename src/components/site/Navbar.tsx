@@ -1,17 +1,19 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/CRG_LOGO_1.png.asset.json";
+
+const LOGO_URL = "/crg-logo.png";
 
 const NAV_ITEMS = [
   { label: "Home", href: "#home", dot: "var(--chart-1)" },
   { label: "About Us", href: "#about", dot: "var(--chart-2)" },
-  { label: "Sectors", href: "#sectors", dot: "var(--chart-3)" },
-  { label: "Recent Work", href: "#work", dot: "var(--chart-4)" },
-  { label: "Projects", href: "#projects", dot: "var(--chart-5)" },
-  { label: "Resource Center", href: "#resources", dot: "var(--chart-1)" },
+  { label: "Services", href: "#services", dot: "var(--chart-3)" },
+  { label: "Sectors", href: "#sectors", dot: "var(--chart-4)" },
+  { label: "Recent Work", href: "#work", dot: "var(--chart-5)" },
+  { label: "Projects", href: "#projects", dot: "var(--chart-1)" },
+  { label: "Resources", href: "#resources", dot: "var(--chart-2)" },
   { label: "News", href: "#news", dot: "var(--chart-3)" },
-  { label: "Partners", href: "#global", dot: "var(--chart-2)" },
+  { label: "Partners", href: "#partners", dot: "var(--chart-4)" },
 ];
 
 export function Navbar() {
@@ -37,7 +39,7 @@ export function Navbar() {
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 lg:px-8">
         <a href="#home" className="flex min-w-0 items-center transition-opacity hover:opacity-80">
           <img
-            src={logo.url}
+            src={LOGO_URL}
             alt="CRG Research & Consulting logo"
             className={cn(
               "w-auto object-contain transition-all duration-500 drop-shadow-lg",
@@ -52,7 +54,7 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "nav-link rounded-full px-2.5 text-[13px] whitespace-nowrap transition-colors duration-500",
+                "nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap transition-colors duration-500",
                 scrolled ? "text-primary" : "text-primary-foreground",
               )}
               style={{ "--nav-dot": item.dot } as CSSProperties}

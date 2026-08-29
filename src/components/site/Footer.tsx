@@ -1,7 +1,7 @@
 import { Linkedin, MapPin, Phone } from "lucide-react";
-import logo from "@/assets/CRG_LOGO_1.png.asset.json";
 
-const LINKEDIN_URL = "https://www.linkedin.com/company/crg-research-consulting/posts/?feedView=all";
+const LINKEDIN_URL = "https://www.linkedin.com/company/crg-research-consulting/";
+const LOGO_URL = "/crg-logo.png";
 
 export function Footer() {
   return (
@@ -10,7 +10,7 @@ export function Footer() {
         <div>
           <a href="#home" className="inline-block rounded-md bg-background p-3">
             <img
-              src={logo.url}
+              src={LOGO_URL}
               alt="CRG Research & Consulting logo"
               className="h-11 w-auto object-contain"
             />
@@ -23,8 +23,8 @@ export function Footer() {
         <div>
           <h4 className="text-sm font-bold tracking-wide text-sidebar-foreground">Head Office</h4>
           <p className="mt-4 flex items-start gap-3 text-sm text-sidebar-foreground/80">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />6 Luther Street, The
-            Village, Eros, Windhoek, Namibia
+            <MapPin className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />
+            6 Luther Street, The Village, Eros Windhoek, Namibia
           </p>
           <p className="mt-3 flex items-center gap-3 text-sm text-sidebar-foreground/80">
             <Phone className="size-4 shrink-0 text-sidebar-primary" />
