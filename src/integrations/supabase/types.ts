@@ -206,6 +206,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_invitations: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          invited_by: string | null
+          status: string
+          notes: string | null
+          expires_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          full_name?: string | null
+          invited_by?: string | null
+          status?: string
+          notes?: string | null
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string | null
+          invited_by?: string | null
+          status?: string
+          notes?: string | null
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

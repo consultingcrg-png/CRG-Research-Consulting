@@ -19,6 +19,13 @@ import {
   Briefcase,
   Users,
   Image as ImageIcon,
+  UserPlus,
+  Mail,
+  CheckCircle2,
+  Clock,
+  Ban,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,6 +108,17 @@ type EmployeeEmail = {
   position: string | null;
   status: "active" | "suspended";
   created_at?: string;
+};
+
+type AdminInvitation = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  invited_by: string | null;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  notes: string | null;
+  expires_at: string;
+  created_at: string;
 };
 
 /* ---------------- Helper: Date Filtering ---------------- */
@@ -252,7 +270,7 @@ function AdminPortal() {
 
       <main className="mx-auto max-w-6xl px-5 py-8">
         <Tabs defaultValue="work">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="work" className="flex items-center gap-1.5">
               <Briefcase className="size-3.5" /> Recent Work
             </TabsTrigger>
@@ -264,6 +282,9 @@ function AdminPortal() {
             </TabsTrigger>
             <TabsTrigger value="emails" className="flex items-center gap-1.5">
               <Users className="size-3.5" /> Employee Emails
+            </TabsTrigger>
+            <TabsTrigger value="admins" className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5" /> Manage Admins
             </TabsTrigger>
           </TabsList>
 
@@ -278,6 +299,9 @@ function AdminPortal() {
           </TabsContent>
           <TabsContent value="emails" className="mt-6">
             <EmployeeEmailsPanel />
+          </TabsContent>
+          <TabsContent value="admins" className="mt-6">
+            <AdminsPanel />
           </TabsContent>
         </Tabs>
       </main>
@@ -2309,6 +2333,480 @@ function EmployeeEmailsPanel() {
         description="This permanently removes the record. Consider suspending instead."
         onCancel={() => setDeleteId(null)}
         onConfirm={() => deleteId && remove.mutate(deleteId)}
+      />
+    </div>
+  );
+}
+
+/* ---------------- 5. Admins Panel ---------------- */
+
+function AdminsPanel() {
+  const qc = useQueryClient();
+
+  /* ---------- Invitation Form State ---------- */
+  const [showForm, setShowForm] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  /* ---------- Filter / Search State ---------- */
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* ---------- Revoke confirm ---------- */
+  const [revokeId, setRevokeId] = useState<string | null>(null);
+
+  /* ---------- Fetch current user (to record invited_by) ---------- */
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
+
+  /* ---------- Query: all invitations ---------- */
+  const { data: invitations = [], isLoading, refetch } = useQuery({
+    queryKey: ["admin", "invitations"],
+    queryFn: async (): Promise<AdminInvitation[]> => {
+      const { data, error } = await supabase
+        .from("admin_invitations")
+        .select("id,email,full_name,invited_by,status,notes,expires_at,created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AdminInvitation[];
+    },
+  });
+
+  /* ---------- Mutation: send invitation ---------- */
+  const sendInvite = useMutation({
+    mutationFn: async (fd: FormData) => {
+      const email = (fd.get("email") as string).trim().toLowerCase();
+      const fullName = (fd.get("full_name") as string).trim() || null;
+      const notes = (fd.get("notes") as string).trim() || null;
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. Insert invitation record
+      const { error: dbError } = await supabase.from("admin_invitations").insert({
+        email,
+        full_name: fullName,
+        invited_by: currentUserId,
+        status: "pending",
+        notes,
+        expires_at: expiresAt,
+      });
+      if (dbError) throw dbError;
+
+      // 2. Send magic link (OTP sign-in) — creates user if not exists
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/staff-access-crg`,
+        },
+      });
+      if (otpError) throw otpError;
+    },
+    onSuccess: () => {
+      toast.success("Invitation sent! The new admin will receive a magic link to their email.");
+      setShowForm(false);
+      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to send invitation: ${err.message}`);
+    },
+  });
+
+  /* ---------- Mutation: revoke invitation ---------- */
+  const revokeInvite = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("admin_invitations")
+        .update({ status: "revoked" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Invitation revoked.");
+      setRevokeId(null);
+      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to revoke: ${err.message}`);
+    },
+  });
+
+  /* ---------- Filter logic ---------- */
+  const filtered = useMemo(() => {
+    return invitations.filter((inv) => {
+      const matchStatus = statusFilter === "ALL" || inv.status === statusFilter;
+      const q = searchQuery.toLowerCase();
+      const matchSearch =
+        !q ||
+        inv.email.toLowerCase().includes(q) ||
+        (inv.full_name ?? "").toLowerCase().includes(q);
+      return matchStatus && matchSearch;
+    });
+  }, [invitations, statusFilter, searchQuery]);
+
+  /* ---------- Stats ---------- */
+  const counts = useMemo(
+    () => ({
+      pending: invitations.filter((i) => i.status === "pending").length,
+      accepted: invitations.filter((i) => i.status === "accepted").length,
+      revoked: invitations.filter((i) => i.status === "revoked").length,
+    }),
+    [invitations]
+  );
+
+  /* ---------- Helpers ---------- */
+  function statusBadge(status: AdminInvitation["status"]) {
+    type BadgeConfig = { label: string; className: string; iconClass: string; BanIcon?: boolean };
+    const map: Record<AdminInvitation["status"], BadgeConfig> = {
+      pending: {
+        label: "Pending",
+        className: "bg-amber-100 text-amber-800 border-amber-300",
+        iconClass: "clock",
+      },
+      accepted: {
+        label: "Accepted",
+        className: "bg-emerald-100 text-emerald-800 border-emerald-300",
+        iconClass: "check",
+      },
+      revoked: {
+        label: "Revoked",
+        className: "bg-red-100 text-red-800 border-red-300",
+        iconClass: "ban",
+        BanIcon: true,
+      },
+      expired: {
+        label: "Expired",
+        className: "bg-gray-100 text-gray-600 border-gray-300",
+        iconClass: "clock",
+      },
+    };
+    const cfg = map[status] ?? map.expired;
+    return (
+      <span
+        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cfg.className}`}
+      >
+        {cfg.BanIcon ? (
+          <Ban className="size-3" />
+        ) : cfg.iconClass === "check" ? (
+          <CheckCircle2 className="size-3" />
+        ) : (
+          <Clock className="size-3" />
+        )}
+        {cfg.label}
+      </span>
+    );
+  }
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("en-ZA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  function isExpired(inv: AdminInvitation) {
+    return inv.status === "pending" && new Date(inv.expires_at) < new Date();
+  }
+
+  /* ---------- Render ---------- */
+  return (
+    <div className="space-y-6">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
+            <ShieldCheck className="size-5 text-primary" />
+            Manage Administrators
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Invite new admins and manage existing admin access. Invitations expire after 7 days.
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowForm((v) => !v)}
+          className="shrink-0 gap-2"
+        >
+          {showForm ? (
+            <>
+              <X className="size-4" /> Cancel
+            </>
+          ) : (
+            <>
+              <UserPlus className="size-4" /> Invite New Admin
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* ── Stats Row ── */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pending</p>
+        </div>
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-emerald-600">{counts.accepted}</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Accepted</p>
+        </div>
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-primary">{invitations.length}</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Total Sent</p>
+        </div>
+      </div>
+
+      {/* ── Invitation Form ── */}
+      {showForm && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSending(true);
+            const fd = new FormData(e.currentTarget);
+            sendInvite.mutate(fd, { onSettled: () => setSending(false) });
+          }}
+          className="animate-fade-up space-y-5 rounded-2xl border-2 border-primary bg-card p-6 shadow-card"
+        >
+          {/* Form title */}
+          <div className="flex items-center gap-3 border-b border-border pb-4">
+            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="size-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground">Send Admin Invitation</h3>
+              <p className="text-xs text-muted-foreground">
+                A magic link will be emailed to the invitee. They click it to gain admin access.
+              </p>
+            </div>
+          </div>
+
+          {/* Fields */}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inv_full_name" className="font-semibold">
+                Full Name
+              </Label>
+              <Input
+                id="inv_full_name"
+                name="full_name"
+                placeholder="e.g. Thabo Nkosi"
+                autoComplete="name"
+              />
+              <p className="text-[11px] text-muted-foreground">Optional — for your records</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="inv_email" className="font-semibold">
+                Email Address <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="inv_email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="admin@example.co.za"
+                  autoComplete="email"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="inv_notes" className="font-semibold">
+              Notes / Reason
+            </Label>
+            <Textarea
+              id="inv_notes"
+              name="notes"
+              rows={2}
+              placeholder="e.g. New senior researcher joining — full admin access required."
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Internal note — not sent to the invitee
+            </p>
+          </div>
+
+          {/* Info callout */}
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3.5">
+            <Clock className="mt-0.5 size-4 shrink-0 text-amber-600" />
+            <p className="text-xs text-amber-800">
+              The invitation link expires in <strong>7 days</strong>. Once the invitee clicks the
+              magic link, they are automatically granted admin access and the invitation is marked
+              as accepted.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button type="submit" disabled={sending || sendInvite.isPending} className="gap-2">
+              <Mail className="size-4" />
+              {sending || sendInvite.isPending ? "Sending..." : "Send Invitation"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowForm(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* ── Filters ── */}
+      {!showForm && (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 pl-9 pr-8"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Filter className="size-3.5 text-muted-foreground" />
+              <Label htmlFor="invStatus" className="text-xs font-medium shrink-0">
+                Status:
+              </Label>
+              <select
+                id="invStatus"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-2.5 text-xs"
+              >
+                <option value="ALL">All</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="revoked">Revoked</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1.5 text-xs"
+              onClick={() => void refetch()}
+              title="Refresh list"
+            >
+              <RefreshCw className="size-3.5" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Invitations List ── */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="size-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border py-14 text-center">
+          <UserPlus className="size-10 text-muted-foreground/40" />
+          <div>
+            <p className="font-semibold text-foreground">No invitations found</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {invitations.length === 0
+                ? "Send your first admin invitation using the button above."
+                : "No invitations match your current filters."}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map((inv) => {
+            const expired = isExpired(inv);
+            const effectiveStatus = expired ? "expired" : inv.status;
+            return (
+              <li
+                key={inv.id}
+                className="flex flex-col gap-3 rounded-xl border-2 border-primary/30 bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+              >
+                {/* Left: avatar + info */}
+                <div className="flex items-start gap-4 min-w-0 flex-1">
+                  {/* Avatar circle */}
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-base uppercase select-none">
+                    {(inv.full_name ?? inv.email)[0]}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-semibold text-foreground text-sm">
+                        {inv.full_name ?? <span className="italic text-muted-foreground">No name</span>}
+                      </span>
+                      {statusBadge(effectiveStatus)}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3" />
+                        {inv.email}
+                      </span>
+                      <span>Invited {formatDate(inv.created_at)}</span>
+                      {inv.status === "pending" && (
+                        <span className={expired ? "text-destructive" : ""}>
+                          {expired
+                            ? "⚠ Expired"
+                            : `Expires ${formatDate(inv.expires_at)}`}
+                        </span>
+                      )}
+                    </div>
+                    {inv.notes && (
+                      <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground italic">
+                        Note: {inv.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: action buttons */}
+                <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+                  {(inv.status === "pending" && !expired) && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="gap-1.5 text-xs"
+                      onClick={() => setRevokeId(inv.id)}
+                    >
+                      <Ban className="size-3.5" />
+                      Revoke
+                    </Button>
+                  )}
+                  {(inv.status === "accepted") && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                      <CheckCircle2 className="size-3" />
+                      Active Admin
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* ── Revoke Confirm Dialog ── */}
+      <ConfirmDialog
+        open={revokeId !== null}
+        title="Revoke this invitation?"
+        description="The magic link will no longer grant admin access. You can invite the person again at any time."
+        onCancel={() => setRevokeId(null)}
+        onConfirm={() => revokeId && revokeInvite.mutate(revokeId)}
       />
     </div>
   );
