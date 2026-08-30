@@ -541,22 +541,22 @@ function WorkUpdatesPanel() {
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-3">
                 {images.map((url, idx) => (
-                  <div key={url} className="relative">
+                  <div key={url} className="relative size-16 sm:size-20 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
                     <img
                       src={url}
                       alt={`Work update ${idx + 1}`}
-                      className="size-20 rounded-md object-cover border border-border"
+                      className="size-full object-cover"
                     />
-                    <span className="absolute left-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                    <span className="absolute left-1 bottom-1 rounded bg-black/75 px-1 text-[9px] text-white">
                       #{idx + 1}
                     </span>
                     <button
                       type="button"
                       aria-label="Remove image"
                       onClick={() => setImages((p) => p.filter((u) => u !== url))}
-                      className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                      className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm hover:opacity-90"
                     >
-                      <Trash2 className="size-3" />
+                      <Trash2 className="size-2.5" />
                     </button>
                   </div>
                 ))}
@@ -709,30 +709,46 @@ function WorkUpdatesPanel() {
           {filteredData.map((item) => (
             <li
               key={item.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
             >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-sm font-bold">{item.title}</h3>
-                  <Badge variant={item.status === "published" ? "default" : "secondary"}>
-                    {item.status}
-                  </Badge>
-                  {item.sector && (
-                    <Badge variant="outline" className="text-[11px]">
-                      {item.sector}
+              <div className="flex items-start gap-4 min-w-0 flex-1">
+                {item.image_urls[0] && (
+                  <div className="relative size-16 sm:size-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                    <img
+                      src={item.image_urls[0]}
+                      alt={item.title}
+                      className="size-full object-cover"
+                    />
+                    {item.image_urls.length > 1 && (
+                      <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[9px] font-semibold text-white">
+                        +{item.image_urls.length - 1}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate text-sm font-bold text-foreground">{item.title}</h3>
+                    <Badge variant={item.status === "published" ? "default" : "secondary"}>
+                      {item.status}
                     </Badge>
-                  )}
-                  {item.image_urls.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      📷 {item.image_urls.length} {item.image_urls.length === 1 ? "image" : "images"}
-                    </span>
-                  )}
+                    {item.sector && (
+                      <Badge variant="outline" className="text-[11px]">
+                        {item.sector}
+                      </Badge>
+                    )}
+                    {item.image_urls.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        📷 {item.image_urls.length} {item.image_urls.length === 1 ? "image" : "images"}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {item.work_date} · {item.description}
+                  </p>
                 </div>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                  {item.work_date} · {item.description}
-                </p>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
                 <Button size="icon" variant="outline" onClick={() => openForm(item)}>
                   <Pencil className="size-4" />
                 </Button>
@@ -1603,19 +1619,19 @@ function NewsPanel() {
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-3">
                 {images.map((url, idx) => (
-                  <div key={url} className="relative">
+                  <div key={url} className="relative size-16 sm:size-20 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
                     <img
                       src={url}
                       alt={`Article photo ${idx + 1}`}
-                      className="size-20 rounded-md object-cover border border-border"
+                      className="size-full object-cover"
                     />
                     <button
                       type="button"
                       aria-label="Remove image"
                       onClick={() => setImages((p) => p.filter((u) => u !== url))}
-                      className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                      className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm hover:opacity-90"
                     >
-                      <Trash2 className="size-3" />
+                      <Trash2 className="size-2.5" />
                     </button>
                   </div>
                 ))}
@@ -1784,19 +1800,26 @@ function NewsPanel() {
           {filteredData.map((item) => (
             <li
               key={item.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
             >
-              <div className="min-w-0 flex items-start gap-4">
+              <div className="flex items-start gap-4 min-w-0 flex-1">
                 {item.image_urls[0] && (
-                  <img
-                    src={item.image_urls[0]}
-                    alt={item.title}
-                    className="size-16 rounded-lg object-cover shrink-0 border border-border"
-                  />
+                  <div className="relative size-16 sm:size-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                    <img
+                      src={item.image_urls[0]}
+                      alt={item.title}
+                      className="size-full object-cover"
+                    />
+                    {item.image_urls.length > 1 && (
+                      <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[9px] font-semibold text-white">
+                        +{item.image_urls.length - 1}
+                      </span>
+                    )}
+                  </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-sm font-bold">{item.title}</h3>
+                    <h3 className="truncate text-sm font-bold text-foreground">{item.title}</h3>
                     {item.category && (
                       <Badge variant="default" className="text-[11px]">
                         {item.category}
@@ -1811,7 +1834,7 @@ function NewsPanel() {
                       </Badge>
                     )}
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                     {item.news_date} · {item.summary || item.content}
                   </p>
                   {item.external_link && (
@@ -1826,7 +1849,7 @@ function NewsPanel() {
                   )}
                 </div>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
                 <Button size="icon" variant="outline" onClick={() => openForm(item)}>
                   <Pencil className="size-4" />
                 </Button>
