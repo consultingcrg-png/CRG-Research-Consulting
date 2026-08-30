@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import { Navbar } from "@/components/site/Navbar";
 import { HeroSlideshow } from "@/components/site/HeroSlideshow";
 import { RecentWork } from "@/components/site/RecentWork";
+import { RecentResources } from "@/components/site/RecentResources";
+import { RecentNews } from "@/components/site/RecentNews";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import LocationsMap from "@/components/site/LocationsMap";
@@ -355,45 +357,9 @@ function Index() {
 
         <RecentWork />
 
-        {/* Projects / Resources / News */}
-        <section className="py-20 lg:py-28">
-          <div className="mx-auto grid max-w-7xl gap-6 px-5 md:grid-cols-3 lg:px-8">
-            {[
-              {
-                id: "projects",
-                kicker: "PROJECTS",
-                title: "Projects",
-                text: "Detailed case studies of our commissioned assignments across land, energy, health and development.",
-              },
-              {
-                id: "resources",
-                kicker: "KNOWLEDGE",
-                title: "Resources",
-                text: "Reports, policy briefs, toolkits and datasets produced by our research teams.",
-              },
-              {
-                id: "news",
-                kicker: "UPDATES",
-                title: "News",
-                text: "Announcements, events and media coverage from across the CRG network.",
-              },
-            ].map((block, i) => (
-              <Reveal key={block.id} delay={i * 110}>
-                <section
-                  id={block.id}
-                  className="hover-lift h-full scroll-mt-24 rounded-xl border-2 border-primary bg-card p-8 shadow-card"
-                >
-                  <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                    {block.kicker}
-                  </span>
-                  <h2 className="mt-2 text-2xl font-bold">{block.title}</h2>
-                  <p className="mt-3 text-sm text-muted-foreground">{block.text}</p>
-                  <p className="mt-4 text-xs font-semibold text-accent">Content coming soon</p>
-                </section>
-              </Reveal>
-            ))}
-          </div>
-        </section>
+        <RecentResources />
+
+        <RecentNews />
 
         {/* Partners */}
         <section id="partners" className="scroll-mt-24 py-20 lg:py-28">
