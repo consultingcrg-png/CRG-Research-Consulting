@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Reveal } from "./Reveal";
+import { ProjectCard } from "./ProjectCard";
 
 export type WorkUpdate = {
   id: string;
@@ -10,12 +11,13 @@ export type WorkUpdate = {
   image_urls: string[];
   work_date: string;
   status: string;
+  sector?: string | null;
 };
 
 async function fetchPublishedWork(): Promise<WorkUpdate[]> {
   const { data, error } = await supabase
     .from("work_updates")
-    .select("id,title,description,image_urls,work_date,status")
+    .select("id,title,description,image_urls,work_date,status,sector")
     .eq("status", "published")
     .order("work_date", { ascending: false });
   if (error) throw error;
@@ -31,7 +33,9 @@ export function RecentWork() {
     queryFn: fetchPublishedWork,
   });
 
-  const items = data ?? [];
+  const allItems = data ?? [];
+  // Only the latest 3 updates are displayed on the main website homepage
+  const latestThreeItems = allItems.slice(0, 3);
 
   return (
     <section id="work" className="bg-surface py-20 lg:py-28">
@@ -47,45 +51,33 @@ export function RecentWork() {
               <div key={i} className="h-72 animate-pulse rounded-xl bg-muted" />
             ))}
           </div>
-        ) : items.length === 0 ? (
+        ) : latestThreeItems.length === 0 ? (
           <Reveal className="mt-12 rounded-xl border-2 border-dashed border-primary bg-card p-12 text-center">
             <p className="text-muted-foreground">
               New project updates will be published here soon.
             </p>
           </Reveal>
         ) : (
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item, i) => (
-              <Reveal key={item.id} delay={i * 90} as="article">
-                <article className="hover-lift flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-card">
-                  {item.image_urls[0] ? (
-                    <div className="aspect-[16/10] overflow-hidden">
-                      <img
-                        src={item.image_urls[0]}
-                        alt={item.title}
-                        loading="lazy"
-                        className="size-full object-cover transition-transform duration-700 hover:scale-105"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="flex flex-1 flex-col p-6">
-                    <p className="flex items-center gap-2 text-xs font-semibold text-accent">
-                      <CalendarDays className="size-4" />
-                      {new Date(item.work_date).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                    <h3 className="mt-2 text-lg font-bold">{item.title}</h3>
-                    <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </div>
-                </article>
-              </Reveal>
-            ))}
-          </div>
+          <>
+            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {latestThreeItems.map((item, i) => (
+                <Reveal key={item.id} delay={i * 90}>
+                  <ProjectCard project={item} />
+                </Reveal>
+              ))}
+            </div>
+
+            {/* View All Projects Button */}
+            <div className="mt-12 text-center">
+              <a
+                href="/projects"
+                className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                View all projects ({allItems.length})
+                <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </>
         )}
       </div>
     </section>

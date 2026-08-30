@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Pencil, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { LogOut, Pencil, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { KEY_SECTORS } from "@/lib/sectors";
 const LOGO_URL = "/crg-logo.png";
 
 const IDLE_MS = 30 * 60 * 1000;
@@ -43,6 +44,7 @@ type WorkUpdate = {
   image_urls: string[];
   work_date: string;
   status: "draft" | "published";
+  sector?: string;
 };
 
 type EmployeeEmail = {
@@ -181,13 +183,15 @@ function WorkUpdatesPanel() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminSectorFilter, setAdminSectorFilter] = useState("ALL");
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "work_updates"],
     queryFn: async (): Promise<WorkUpdate[]> => {
       const { data, error } = await supabase
         .from("work_updates")
-        .select("id,title,description,image_urls,work_date,status")
+        .select("id,title,description,image_urls,work_date,status,sector")
         .order("work_date", { ascending: false });
       if (error) throw error;
       return (data ?? []).map((r) => ({
@@ -200,6 +204,7 @@ function WorkUpdatesPanel() {
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin", "work_updates"] });
     void qc.invalidateQueries({ queryKey: ["work_updates", "published"] });
+    void qc.invalidateQueries({ queryKey: ["work_updates", "all_published"] });
   };
 
   const save = useMutation({
@@ -214,6 +219,7 @@ function WorkUpdatesPanel() {
             image_urls: payload.image_urls,
             work_date: payload.work_date,
             status: payload.status,
+            sector: payload.sector || "Other",
           })
           .eq("id", payload.id);
         if (error) throw error;
@@ -224,6 +230,7 @@ function WorkUpdatesPanel() {
           image_urls: payload.image_urls,
           work_date: payload.work_date,
           status: payload.status,
+          sector: payload.sector || "Other",
           created_by: userData.user?.id ?? null,
         });
         if (error) throw error;
@@ -284,6 +291,7 @@ function WorkUpdatesPanel() {
     const f = new FormData(e.currentTarget);
     const title = String(f.get("title") ?? "").trim();
     const description = String(f.get("description") ?? "").trim();
+    const sector = String(f.get("sector") ?? "Other");
     if (!title || !description) {
       toast.error("Title and description are required.");
       return;
@@ -295,10 +303,28 @@ function WorkUpdatesPanel() {
       image_urls: images,
       work_date: String(f.get("work_date") ?? new Date().toISOString().slice(0, 10)),
       status: String(f.get("status") ?? "draft") as WorkUpdate["status"],
+      sector,
     });
   };
 
   const formOpen = creating || editing !== null;
+
+  // Filter admin data by search term and sector
+  const filteredData = data.filter((item) => {
+    if (adminSectorFilter !== "ALL") {
+      const itemSec = (item.sector ?? "Other").trim().toLowerCase();
+      const selSec = adminSectorFilter.trim().toLowerCase();
+      if (itemSec !== selSec) return false;
+    }
+    if (adminSearch.trim() !== "") {
+      const q = adminSearch.toLowerCase().trim();
+      const matchTitle = item.title.toLowerCase().includes(q);
+      const matchDesc = item.description.toLowerCase().includes(q);
+      const matchSector = (item.sector ?? "").toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchSector) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -330,7 +356,22 @@ function WorkUpdatesPanel() {
               required
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <Label htmlFor="sector">Sector</Label>
+              <select
+                id="sector"
+                name="sector"
+                defaultValue={editing?.sector ?? "Other"}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {KEY_SECTORS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <Label htmlFor="work_date">Date</Label>
               <Input
@@ -354,7 +395,7 @@ function WorkUpdatesPanel() {
             </div>
           </div>
           <div>
-            <Label htmlFor="image">Images</Label>
+            <Label htmlFor="image">Images (Upload one or more)</Label>
             <Input
               id="image"
               type="file"
@@ -368,18 +409,21 @@ function WorkUpdatesPanel() {
             />
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-3">
-                {images.map((url) => (
+                {images.map((url, idx) => (
                   <div key={url} className="relative">
                     <img
                       src={url}
-                      alt="Work update"
-                      className="size-20 rounded-md object-cover"
+                      alt={`Work update ${idx + 1}`}
+                      className="size-20 rounded-md object-cover border border-border"
                     />
+                    <span className="absolute left-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                      #{idx + 1}
+                    </span>
                     <button
                       type="button"
                       aria-label="Remove image"
                       onClick={() => setImages((p) => p.filter((u) => u !== url))}
-                      className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-destructive text-destructive-foreground"
+                      className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
                     >
                       <Trash2 className="size-3" />
                     </button>
@@ -407,13 +451,55 @@ function WorkUpdatesPanel() {
         </form>
       )}
 
+      {/* Admin Search and Sector Filter Controls */}
+      {!formOpen && data.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <Input
+              placeholder="Search updates by title or keyword..."
+              value={adminSearch}
+              onChange={(e) => setAdminSearch(e.target.value)}
+              className="h-9 pr-8"
+            />
+            {adminSearch && (
+              <button
+                onClick={() => setAdminSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="adminSector" className="text-xs shrink-0">
+              Sector:
+            </Label>
+            <select
+              id="adminSector"
+              value={adminSectorFilter}
+              onChange={(e) => setAdminSectorFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-xs"
+            >
+              <option value="ALL">All Sectors</option>
+              {KEY_SECTORS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : data.length === 0 ? (
         <p className="text-sm text-muted-foreground">No work updates yet.</p>
+      ) : filteredData.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No work updates match your filters.</p>
       ) : (
         <ul className="space-y-3">
-          {data.map((item) => (
+          {filteredData.map((item) => (
             <li
               key={item.id}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
@@ -424,6 +510,16 @@ function WorkUpdatesPanel() {
                   <Badge variant={item.status === "published" ? "default" : "secondary"}>
                     {item.status}
                   </Badge>
+                  {item.sector && (
+                    <Badge variant="outline" className="text-[11px]">
+                      {item.sector}
+                    </Badge>
+                  )}
+                  {item.image_urls.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      📷 {item.image_urls.length} {item.image_urls.length === 1 ? "image" : "images"}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                   {item.work_date} · {item.description}

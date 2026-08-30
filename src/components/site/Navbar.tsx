@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 const LOGO_URL = "/crg-logo.png";
 
 const NAV_ITEMS = [
-  { label: "Home", href: "#home", dot: "var(--chart-1)" },
-  { label: "About Us", href: "#about", dot: "var(--chart-2)" },
-  { label: "Services", href: "#services", dot: "var(--chart-3)" },
-  { label: "Sectors", href: "#sectors", dot: "var(--chart-4)" },
-  { label: "Projects", href: "#projects", dot: "var(--chart-1)" },
-  { label: "Resources", href: "#resources", dot: "var(--chart-2)" },
-  { label: "News", href: "#news", dot: "var(--chart-3)" },
-  { label: "Partners", href: "#partners", dot: "var(--chart-4)" },
+  { label: "Home", href: "/", dot: "var(--chart-1)" },
+  { label: "About Us", href: "/#about", dot: "var(--chart-2)" },
+  { label: "Services", href: "/#services", dot: "var(--chart-3)" },
+  { label: "Sectors", href: "/#sectors", dot: "var(--chart-4)" },
+  { label: "Projects", href: "/projects", dot: "var(--chart-1)" },
+  { label: "Resources", href: "/#resources", dot: "var(--chart-2)" },
+  { label: "News", href: "/#news", dot: "var(--chart-3)" },
+  { label: "Partners", href: "/#partners", dot: "var(--chart-4)" },
 ];
 
 export function Navbar() {

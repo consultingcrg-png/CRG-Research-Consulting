@@ -78,6 +78,7 @@ export type Database = {
           description: string
           id: string
           image_urls: Json
+          sector: string | null
           status: string
           title: string
           updated_at: string
@@ -89,6 +90,7 @@ export type Database = {
           description: string
           id?: string
           image_urls?: Json
+          sector?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -97,9 +99,10 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          description: string
+          description?: string
           id?: string
           image_urls?: Json
+          sector?: string | null
           status?: string
           title?: string
           updated_at?: string
