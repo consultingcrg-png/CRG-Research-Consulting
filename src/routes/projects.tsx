@@ -83,18 +83,12 @@ function ProjectsPage() {
 
       <main className="flex-1 pt-24">
         {/* Hero Section */}
-        <section className="bg-primary py-16 lg:py-20">
+        <section className="bg-primary py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-3xl">
-              <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                OFFICIAL REPOSITORY
-              </span>
-              <h1 className="mt-3 text-3xl font-extrabold text-primary-foreground sm:text-4xl lg:text-5xl">
+              <h1 className="text-3xl font-extrabold text-primary-foreground sm:text-4xl lg:text-5xl">
                 Projects & Work Updates
               </h1>
-              <p className="mt-4 text-base text-primary-foreground/80 sm:text-lg">
-                Explore evidence-based research assignments, field studies, and strategic advisory updates across Africa.
-              </p>
             </Reveal>
           </div>
         </section>

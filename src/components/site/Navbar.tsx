@@ -29,21 +29,16 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
-        scrolled
-          ? "bg-background/95 shadow-card backdrop-blur-md"
-          : "bg-transparent",
+        "fixed inset-x-0 top-0 z-50 transition-all duration-300 bg-background/95 backdrop-blur-md border-b border-border/40",
+        scrolled ? "shadow-lift py-0.5" : "shadow-sm py-1",
       )}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 lg:px-8">
-        <a href="#home" className="flex min-w-0 items-center transition-opacity hover:opacity-80">
+        <a href="/#home" className="flex min-w-0 items-center transition-opacity hover:opacity-80">
           <img
             src={LOGO_URL}
             alt="CRG Research & Consulting logo"
-            className={cn(
-              "w-auto object-contain transition-all duration-500 drop-shadow-lg",
-              scrolled ? "h-10" : "h-12",
-            )}
+            className="h-10 sm:h-11 w-auto object-contain transition-all duration-300 drop-shadow"
           />
         </a>
 
@@ -52,17 +47,14 @@ export function Navbar() {
             <a
               key={item.href}
               href={item.href}
-              className={cn(
-                "nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap transition-colors duration-500",
-                scrolled ? "text-primary" : "text-primary-foreground",
-              )}
+              className="nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap font-medium text-primary hover:text-accent transition-colors duration-300"
               style={{ "--nav-dot": item.dot } as CSSProperties}
             >
               {item.label}
             </a>
           ))}
           <a
-            href="#contact"
+            href="/#contact"
             className="ml-2 rounded-full bg-accent-gradient px-5 py-2.5 text-[13px] font-semibold text-accent-foreground shadow-card transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-lift"
           >
             Contact Us
@@ -74,12 +66,7 @@ export function Navbar() {
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-full border transition-colors duration-500 lg:hidden",
-            scrolled
-              ? "border-border text-primary hover:bg-secondary"
-              : "border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/20",
-          )}
+          className="grid size-11 shrink-0 place-items-center rounded-full border border-border text-primary hover:bg-secondary transition-colors duration-300 lg:hidden"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
