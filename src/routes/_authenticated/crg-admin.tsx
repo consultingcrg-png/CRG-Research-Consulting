@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@supabase/supabase-js";
 import {
   LogOut,
   Pencil,
@@ -26,6 +27,12 @@ import {
   Ban,
   ShieldCheck,
   RefreshCw,
+  User,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Save,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,7 +277,7 @@ function AdminPortal() {
 
       <main className="mx-auto max-w-6xl px-5 py-8">
         <Tabs defaultValue="work">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="work" className="flex items-center gap-1.5">
               <Briefcase className="size-3.5" /> Recent Work
             </TabsTrigger>
@@ -285,6 +292,9 @@ function AdminPortal() {
             </TabsTrigger>
             <TabsTrigger value="admins" className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5" /> Manage Admins
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-1.5">
+              <User className="size-3.5" /> Profile
             </TabsTrigger>
           </TabsList>
 
@@ -302,6 +312,9 @@ function AdminPortal() {
           </TabsContent>
           <TabsContent value="admins" className="mt-6">
             <AdminsPanel />
+          </TabsContent>
+          <TabsContent value="profile" className="mt-6">
+            <ProfilePanel />
           </TabsContent>
         </Tabs>
       </main>
@@ -2346,6 +2359,8 @@ function AdminsPanel() {
   /* ---------- Invitation Form State ---------- */
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /* ---------- Filter / Search State ---------- */
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -2375,42 +2390,92 @@ function AdminsPanel() {
     },
   });
 
-  /* ---------- Mutation: send invitation ---------- */
-  const sendInvite = useMutation({
+  /* ---------- Mutation: create admin with credentials ---------- */
+  const createAdminMutation = useMutation({
     mutationFn: async (fd: FormData) => {
+      const firstName = (fd.get("first_name") as string).trim();
+      const lastName = (fd.get("last_name") as string).trim();
       const email = (fd.get("email") as string).trim().toLowerCase();
-      const fullName = (fd.get("full_name") as string).trim() || null;
+      const password = (fd.get("password") as string);
+      const confirmPassword = (fd.get("confirm_password") as string);
       const notes = (fd.get("notes") as string).trim() || null;
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      // 1. Insert invitation record
+      if (!email) throw new Error("Email address is required.");
+      if (!password) throw new Error("Password is required.");
+      if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+      if (password !== confirmPassword) throw new Error("Passwords do not match.");
+
+      const fullName = `${firstName} ${lastName}`.trim() || null;
+      const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. Create client instance with persistSession: false to preserve current session
+      const SUPABASE_URL = (import.meta.env["VITE_SUPABASE_URL"] as string) || "";
+      const SUPABASE_PUBLISHABLE_KEY = (import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] as string) || "";
+      const tempAuthClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+
+      // 2. Sign up new admin user
+      const { data: signUpData, error: signUpError } = await tempAuthClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName || undefined,
+            last_name: lastName || undefined,
+            full_name: fullName || undefined,
+          },
+        },
+      });
+
+      if (signUpError) {
+        throw new Error(signUpError.message);
+      }
+
+      const newUserId = signUpData.user?.id;
+
+      // 3. Record in admin_invitations
       const { error: dbError } = await supabase.from("admin_invitations").insert({
         email,
         full_name: fullName,
         invited_by: currentUserId,
-        status: "pending",
+        status: "accepted",
         notes,
         expires_at: expiresAt,
       });
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.warn("Could not insert into admin_invitations:", dbError);
+      }
 
-      // 2. Send magic link (OTP sign-in) — creates user if not exists
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/staff-access-crg`,
-        },
-      });
-      if (otpError) throw otpError;
+      // 4. Ensure admin role in user_roles if newUserId exists
+      if (newUserId) {
+        const { error: roleError } = await supabase.from("user_roles").upsert(
+          { user_id: newUserId, role: "admin" },
+          { onConflict: "user_id,role" }
+        );
+        if (roleError) console.warn("Role assignment note:", roleError.message);
+
+        // Also upsert into profiles
+        const { error: profError } = await supabase.from("profiles").upsert(
+          {
+            id: newUserId,
+            email,
+            first_name: firstName || null,
+            last_name: lastName || null,
+            full_name: fullName || null,
+          },
+          { onConflict: "id" }
+        );
+        if (profError) console.warn("Profile sync note:", profError.message);
+      }
     },
     onSuccess: () => {
-      toast.success("Invitation sent! The new admin will receive a magic link to their email.");
+      toast.success("New administrator account created successfully!");
       setShowForm(false);
       void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
     },
     onError: (err: Error) => {
-      toast.error(`Failed to send invitation: ${err.message}`);
+      toast.error(`Failed to create admin: ${err.message}`);
     },
   });
 
@@ -2466,7 +2531,7 @@ function AdminsPanel() {
         iconClass: "clock",
       },
       accepted: {
-        label: "Accepted",
+        label: "Active Admin",
         className: "bg-emerald-100 text-emerald-800 border-emerald-300",
         iconClass: "check",
       },
@@ -2522,7 +2587,7 @@ function AdminsPanel() {
             Manage Administrators
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Invite new admins and manage existing admin access. Invitations expire after 7 days.
+            Create new administrator accounts with credentials and manage administrator access.
           </p>
         </div>
         <Button
@@ -2535,7 +2600,7 @@ function AdminsPanel() {
             </>
           ) : (
             <>
-              <UserPlus className="size-4" /> Invite New Admin
+              <UserPlus className="size-4" /> Add New Admin
             </>
           )}
         </Button>
@@ -2544,56 +2609,69 @@ function AdminsPanel() {
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-emerald-600">{counts.accepted}</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Active Admins</p>
+        </div>
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
           <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pending</p>
         </div>
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-emerald-600">{counts.accepted}</p>
-          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Accepted</p>
-        </div>
-        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
           <p className="text-2xl font-bold text-primary">{invitations.length}</p>
-          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Total Sent</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Total Records</p>
         </div>
       </div>
 
-      {/* ── Invitation Form ── */}
+      {/* ── Add Admin Form with Password ── */}
       {showForm && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
             setSending(true);
             const fd = new FormData(e.currentTarget);
-            sendInvite.mutate(fd, { onSettled: () => setSending(false) });
+            createAdminMutation.mutate(fd, { onSettled: () => setSending(false) });
           }}
           className="animate-fade-up space-y-5 rounded-2xl border-2 border-primary bg-card p-6 shadow-card"
         >
           {/* Form title */}
           <div className="flex items-center gap-3 border-b border-border pb-4">
             <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="size-5 text-primary" />
+              <UserPlus className="size-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-foreground">Send Admin Invitation</h3>
+              <h3 className="font-bold text-foreground">Create New Admin Account</h3>
               <p className="text-xs text-muted-foreground">
-                A magic link will be emailed to the invitee. They click it to gain admin access.
+                Enter administrator details and set their initial login credentials.
               </p>
             </div>
           </div>
 
-          {/* Fields */}
-          <div className="grid gap-5 sm:grid-cols-2">
+          {/* Names and Email */}
+          <div className="grid gap-5 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="inv_full_name" className="font-semibold">
-                Full Name
+              <Label htmlFor="inv_first_name" className="font-semibold">
+                First Name <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="inv_full_name"
-                name="full_name"
-                placeholder="e.g. Thabo Nkosi"
-                autoComplete="name"
+                id="inv_first_name"
+                name="first_name"
+                required
+                placeholder="e.g. Thabo"
+                autoComplete="given-name"
               />
-              <p className="text-[11px] text-muted-foreground">Optional — for your records</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="inv_last_name" className="font-semibold">
+                Second / Last Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="inv_last_name"
+                name="last_name"
+                required
+                placeholder="e.g. Nkosi"
+                autoComplete="family-name"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -2607,7 +2685,7 @@ function AdminsPanel() {
                   name="email"
                   type="email"
                   required
-                  placeholder="admin@example.co.za"
+                  placeholder="admin@crgresearch.co.za"
                   autoComplete="email"
                   className="pl-9"
                 />
@@ -2615,35 +2693,82 @@ function AdminsPanel() {
             </div>
           </div>
 
+          {/* Password Fields */}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inv_password" className="font-semibold">
+                Create New Password <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="inv_password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Minimum 6 characters"
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Must be at least 6 characters long.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="inv_confirm_password" className="font-semibold">
+                Confirm Password <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="inv_confirm_password"
+                  name="confirm_password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  placeholder="Re-enter password"
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ensure both passwords match exactly.</p>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="inv_notes" className="font-semibold">
-              Notes / Reason
+              Notes / Department
             </Label>
             <Textarea
               id="inv_notes"
               name="notes"
               rows={2}
-              placeholder="e.g. New senior researcher joining — full admin access required."
+              placeholder="e.g. Lead Research Director — full admin access granted."
             />
             <p className="text-[11px] text-muted-foreground">
-              Internal note — not sent to the invitee
-            </p>
-          </div>
-
-          {/* Info callout */}
-          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3.5">
-            <Clock className="mt-0.5 size-4 shrink-0 text-amber-600" />
-            <p className="text-xs text-amber-800">
-              The invitation link expires in <strong>7 days</strong>. Once the invitee clicks the
-              magic link, they are automatically granted admin access and the invitation is marked
-              as accepted.
+              Internal reference note for your administrative records
             </p>
           </div>
 
           <div className="flex gap-3 pt-1">
-            <Button type="submit" disabled={sending || sendInvite.isPending} className="gap-2">
-              <Mail className="size-4" />
-              {sending || sendInvite.isPending ? "Sending..." : "Send Invitation"}
+            <Button
+              type="submit"
+              disabled={sending || createAdminMutation.isPending}
+              className="gap-2"
+            >
+              <UserPlus className="size-4" />
+              {sending || createAdminMutation.isPending ? "Creating..." : "Create Admin Account"}
             </Button>
             <Button
               type="button"
@@ -2690,8 +2815,8 @@ function AdminsPanel() {
                 className="h-9 rounded-md border border-input bg-background px-2.5 text-xs"
               >
                 <option value="ALL">All</option>
+                <option value="accepted">Active Admin</option>
                 <option value="pending">Pending</option>
-                <option value="accepted">Accepted</option>
                 <option value="revoked">Revoked</option>
                 <option value="expired">Expired</option>
               </select>
@@ -2711,7 +2836,7 @@ function AdminsPanel() {
         </div>
       )}
 
-      {/* ── Invitations List ── */}
+      {/* ── Invitations / Admins List ── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="size-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -2720,11 +2845,11 @@ function AdminsPanel() {
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border py-14 text-center">
           <UserPlus className="size-10 text-muted-foreground/40" />
           <div>
-            <p className="font-semibold text-foreground">No invitations found</p>
+            <p className="font-semibold text-foreground">No administrators found</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {invitations.length === 0
-                ? "Send your first admin invitation using the button above."
-                : "No invitations match your current filters."}
+                ? "Add your first administrator using the button above."
+                : "No admin records match your current filters."}
             </p>
           </div>
         </div>
@@ -2757,7 +2882,7 @@ function AdminsPanel() {
                         <Mail className="size-3" />
                         {inv.email}
                       </span>
-                      <span>Invited {formatDate(inv.created_at)}</span>
+                      <span>Created {formatDate(inv.created_at)}</span>
                       {inv.status === "pending" && (
                         <span className={expired ? "text-destructive" : ""}>
                           {expired
@@ -2804,10 +2929,406 @@ function AdminsPanel() {
       <ConfirmDialog
         open={revokeId !== null}
         title="Revoke this invitation?"
-        description="The magic link will no longer grant admin access. You can invite the person again at any time."
+        description="The administrator access or link will be revoked. You can add them again at any time."
         onCancel={() => setRevokeId(null)}
         onConfirm={() => revokeId && revokeInvite.mutate(revokeId)}
       />
+    </div>
+  );
+}
+
+/* ---------------- 6. Profile Panel ---------------- */
+
+function ProfilePanel() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Password state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  // Fetch logged in admin data
+  useEffect(() => {
+    void (async () => {
+      setLoading(true);
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData?.user) {
+          setLoading(false);
+          return;
+        }
+        const user = userData.user;
+        setCurrentUser(user);
+        setEmail(user.email ?? "");
+
+        // Try fetching profile from profiles table
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name,last_name,full_name")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile) {
+          setFirstName(profile.first_name || (user.user_metadata?.["first_name"] as string) || "");
+          setLastName(profile.last_name || (user.user_metadata?.["last_name"] as string) || "");
+        } else {
+          // Fallback to user_metadata
+          const metaFirst = (user.user_metadata?.["first_name"] as string) || "";
+          const metaLast = (user.user_metadata?.["last_name"] as string) || "";
+          if (metaFirst || metaLast) {
+            setFirstName(metaFirst);
+            setLastName(metaLast);
+          } else if (user.user_metadata?.["full_name"]) {
+            const parts = (user.user_metadata["full_name"] as string).split(" ");
+            setFirstName(parts[0] || "");
+            setLastName(parts.slice(1).join(" ") || "");
+          }
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Save Profile Handler (First Name and Second/Last Name)
+  const handleSaveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setSavingProfile(true);
+
+    try {
+      const trimmedFirst = firstName.trim();
+      const trimmedLast = lastName.trim();
+      const fullName = `${trimmedFirst} ${trimmedLast}`.trim();
+
+      // 1. Update Supabase auth user metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          first_name: trimmedFirst,
+          last_name: trimmedLast,
+          full_name: fullName,
+        },
+      });
+
+      if (authError) throw authError;
+
+      // 2. Update profiles table
+      const { error: profError } = await supabase.from("profiles").upsert(
+        {
+          id: currentUser.id,
+          email: currentUser.email,
+          first_name: trimmedFirst,
+          last_name: trimmedLast,
+          full_name: fullName,
+        },
+        { onConflict: "id" }
+      );
+
+      if (profError) {
+        console.warn("Profile table update note:", profError.message);
+      }
+
+      toast.success("Profile details saved successfully!");
+    } catch (err: any) {
+      toast.error(`Failed to update profile: ${err?.message || "Unknown error"}`);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // Change Password Handler
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.email) return;
+
+    if (!oldPassword) {
+      toast.error("Please enter your current password.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New password and confirm password do not match.");
+      return;
+    }
+    if (oldPassword === newPassword) {
+      toast.error("New password must be different from the current password.");
+      return;
+    }
+
+    setUpdatingPassword(true);
+
+    try {
+      // 1. Verify old password by attempting re-authentication
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: oldPassword,
+      });
+
+      if (verifyError) {
+        toast.error("The current password you entered is incorrect. Please check and try again.");
+        setUpdatingPassword(false);
+        return;
+      }
+
+      // 2. Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success("Password changed successfully!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err: any) {
+      toast.error(`Failed to update password: ${err?.message || "Unknown error"}`);
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  const displayName = `${firstName} ${lastName}`.trim() || email || "Admin";
+  const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || email[0]?.toUpperCase() || "A";
+
+  return (
+    <div className="space-y-8">
+      {/* ── Header ── */}
+      <div>
+        <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <User className="size-5 text-primary" />
+          Admin Profile & Security
+        </h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Manage your personal administrator details and update your password.
+        </p>
+      </div>
+
+      {/* ── User Overview Banner ── */}
+      <div className="flex flex-col sm:flex-row items-center gap-5 rounded-2xl border-2 border-primary bg-card p-6 shadow-card">
+        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-md">
+          {initials}
+        </div>
+        <div className="text-center sm:text-left min-w-0 flex-1">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+            <h3 className="text-lg font-bold text-foreground truncate">{displayName}</h3>
+            <Badge variant="default" className="gap-1 bg-primary text-primary-foreground text-xs py-0.5">
+              <Shield className="size-3" /> Administrator
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
+            <Mail className="size-3.5" /> {email}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* ── Card 1: Edit Profile Name ── */}
+        <form
+          onSubmit={handleSaveProfile}
+          className="flex flex-col justify-between rounded-2xl border-2 border-primary bg-card p-6 shadow-card space-y-6"
+        >
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                <User className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Personal Information</h3>
+                <p className="text-xs text-muted-foreground">
+                  Update your first and second (last) name.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_first_name" className="font-semibold text-xs">
+                  First Name
+                </Label>
+                <Input
+                  id="prof_first_name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="e.g. Thabo"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_last_name" className="font-semibold text-xs">
+                  Second / Last Name
+                </Label>
+                <Input
+                  id="prof_last_name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="e.g. Nkosi"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_email" className="font-semibold text-xs text-muted-foreground">
+                  Email Address
+                </Label>
+                <Input
+                  id="prof_email"
+                  value={email}
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Your administrator login email cannot be changed directly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-border flex justify-end">
+            <Button type="submit" disabled={savingProfile} className="gap-2">
+              <Save className="size-4" />
+              {savingProfile ? "Saving..." : "Save Profile Details"}
+            </Button>
+          </div>
+        </form>
+
+        {/* ── Card 2: Change Password ── */}
+        <form
+          onSubmit={handleChangePassword}
+          className="flex flex-col justify-between rounded-2xl border-2 border-primary bg-card p-6 shadow-card space-y-6"
+        >
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                <KeyRound className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Change Password</h3>
+                <p className="text-xs text-muted-foreground">
+                  Enter your current password, followed by your new password.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Old Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_old_password" className="font-semibold text-xs">
+                  Current / Old Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="prof_old_password"
+                    type={showOldPassword ? "text" : "password"}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    required
+                    placeholder="Enter your current password"
+                    autoComplete="current-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showOldPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_new_password" className="font-semibold text-xs">
+                  New Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="prof_new_password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    placeholder="Minimum 6 characters"
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Must be at least 6 characters long.
+                </p>
+              </div>
+
+              {/* Confirm New Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prof_confirm_password" className="font-semibold text-xs">
+                  Confirm New Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="prof_confirm_password"
+                    type={showConfirmNewPassword ? "text" : "password"}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    required
+                    placeholder="Re-enter your new password"
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmNewPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-border flex justify-end">
+            <Button
+              type="submit"
+              disabled={updatingPassword}
+              className="gap-2"
+            >
+              <KeyRound className="size-4" />
+              {updatingPassword ? "Updating Password..." : "Update Password"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
