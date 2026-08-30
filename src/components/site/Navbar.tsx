@@ -61,10 +61,10 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap font-medium transition-colors duration-500",
+                "nav-link text-[12px] xl:text-[13px] whitespace-nowrap font-semibold transition-all duration-300",
                 isTransparent
-                  ? "text-primary-foreground hover:text-accent"
-                  : "text-primary hover:text-accent",
+                  ? "text-primary-foreground hover:bg-white/15 hover:text-white"
+                  : "text-primary hover:bg-secondary hover:text-accent",
               )}
               style={{ "--nav-dot": item.dot } as CSSProperties}
             >
