@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,10 @@ const NAV_ITEMS = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  // Check if current page is homepage
+  const isHome = location.pathname === "/" || location.pathname === "";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -26,11 +31,16 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Determine if transparent navbar state should be active (only on homepage when at top)
+  const isTransparent = isHome && !scrolled;
+
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300 bg-background/95 backdrop-blur-md border-b border-border/40",
-        scrolled ? "shadow-lift py-0.5" : "shadow-sm py-1",
+        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+        isTransparent
+          ? "bg-transparent py-1"
+          : "bg-background/95 shadow-card backdrop-blur-md border-b border-border/40 py-0.5",
       )}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 lg:px-8">
@@ -38,7 +48,10 @@ export function Navbar() {
           <img
             src={LOGO_URL}
             alt="CRG Research & Consulting logo"
-            className="h-10 sm:h-11 w-auto object-contain transition-all duration-300 drop-shadow"
+            className={cn(
+              "w-auto object-contain transition-all duration-500 drop-shadow-lg",
+              isTransparent ? "h-12" : "h-10 sm:h-11",
+            )}
           />
         </a>
 
@@ -47,7 +60,12 @@ export function Navbar() {
             <a
               key={item.href}
               href={item.href}
-              className="nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap font-medium text-primary hover:text-accent transition-colors duration-300"
+              className={cn(
+                "nav-link rounded-full px-2 text-[12px] xl:px-2.5 xl:text-[13px] whitespace-nowrap font-medium transition-colors duration-500",
+                isTransparent
+                  ? "text-primary-foreground hover:text-accent"
+                  : "text-primary hover:text-accent",
+              )}
               style={{ "--nav-dot": item.dot } as CSSProperties}
             >
               {item.label}
@@ -66,7 +84,12 @@ export function Navbar() {
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="grid size-11 shrink-0 place-items-center rounded-full border border-border text-primary hover:bg-secondary transition-colors duration-300 lg:hidden"
+          className={cn(
+            "grid size-11 shrink-0 place-items-center rounded-full border transition-colors duration-500 lg:hidden",
+            isTransparent
+              ? "border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/20"
+              : "border-border text-primary hover:bg-secondary",
+          )}
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -95,7 +118,7 @@ export function Navbar() {
             </a>
           ))}
           <a
-            href="#contact"
+            href="/#contact"
             onClick={() => setOpen(false)}
             className="mt-2 rounded-full bg-accent-gradient px-6 py-3 text-center text-sm font-semibold text-accent-foreground"
           >
