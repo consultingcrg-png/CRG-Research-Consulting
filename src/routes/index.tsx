@@ -29,6 +29,7 @@ import { HeroSlideshow } from "@/components/site/HeroSlideshow";
 import { RecentWork } from "@/components/site/RecentWork";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
+import LocationsMap from "@/components/site/LocationsMap";
 
 const TITLE = "CRG Research & Consulting | Research & Strategy, Windhoek Namibia";
 const DESCRIPTION =
@@ -404,30 +405,9 @@ function Index() {
               ))}
             </div>
 
-            {/* Google Maps */}
+            {/* Interactive Locations Map */}
             <Reveal className="mt-14">
-              <div className="relative w-full overflow-hidden rounded-2xl border border-border shadow-card bg-muted">
-                <iframe
-                  title="CRG Research & Consulting office location at 6 Luther Street, The Village, Eros Windhoek, Namibia"
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  allowFullScreen
-                  className="h-[300px] sm:h-[400px] lg:h-[460px] w-full border-0"
-                />
-              </div>
-              <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="size-4 shrink-0 text-accent" />
-                <span className="font-medium text-foreground">{MAP_QUERY}</span>
-              </p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-accent underline-offset-4 hover:underline"
-              >
-                Get directions on Google Maps
-              </a>
+              <LocationsMap />
             </Reveal>
           </div>
         </section>
