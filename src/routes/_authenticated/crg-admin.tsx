@@ -33,6 +33,11 @@ import {
   EyeOff,
   Save,
   Shield,
+  Copy,
+  HelpCircle,
+  Check,
+  Globe,
+  Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -1921,14 +1926,18 @@ function EmployeeEmailsPanel() {
   const [editing, setEditing] = useState<EmployeeEmail | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const [formEmail, setFormEmail] = useState("");
 
-  // Filters & Sorting
-  const [search, setSearch] = useState("");
+  // Filter and sort states
   const [letterFilter, setLetterFilter] = useState("ALL");
   const [dateCreatedFilter, setDateCreatedFilter] = useState("ALL");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"name_asc" | "name_desc" | "date_desc" | "date_asc" | "status" | "dept">("name_asc");
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "employee_emails"] });
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "employee_emails"],
@@ -1936,60 +1945,40 @@ function EmployeeEmailsPanel() {
       const { data, error } = await supabase
         .from("employee_emails")
         .select("id,employee_name,email_address,department,position,status,created_at")
-        .order("employee_name");
+        .order("employee_name", { ascending: true });
       if (error) throw error;
       return (data ?? []) as EmployeeEmail[];
     },
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "employee_emails"] });
-
   const save = useMutation({
-    mutationFn: async (payload: Omit<EmployeeEmail, "id"> & { id?: string }) => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (payload.id) {
-        const { error } = await supabase
-          .from("employee_emails")
-          .update({
-            employee_name: payload.employee_name,
-            email_address: payload.email_address,
-            department: payload.department,
-            position: payload.position,
-            status: payload.status,
-          })
-          .eq("id", payload.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("employee_emails").insert({
-          employee_name: payload.employee_name,
-          email_address: payload.email_address,
-          department: payload.department,
-          position: payload.position,
-          status: payload.status,
-          created_by: userData.user?.id ?? null,
-        });
-        if (error) throw error;
-      }
+    mutationFn: async (
+      payload: Omit<EmployeeEmail, "id"> & { id?: string },
+    ) => {
+      const { error } = await supabase.from("employee_emails").upsert(payload);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Employee record saved.");
+      toast.success(editing ? "Employee record updated." : "Employee record created.");
       setEditing(null);
       setCreating(false);
+      setFormEmail("");
       void invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const toggleStatus = useMutation({
-    mutationFn: async (record: EmployeeEmail) => {
+    mutationFn: async (item: EmployeeEmail) => {
+      const nextStatus = item.status === "active" ? "suspended" : "active";
       const { error } = await supabase
         .from("employee_emails")
-        .update({ status: record.status === "active" ? "suspended" : "active" })
-        .eq("id", record.id);
+        .update({ status: nextStatus })
+        .eq("id", item.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Status updated.");
+      toast.success("Employee status updated.");
       void invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -2012,7 +2001,7 @@ function EmployeeEmailsPanel() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const employee_name = String(f.get("employee_name") ?? "").trim();
-    const email_address = String(f.get("email_address") ?? "").trim();
+    const email_address = (formEmail || String(f.get("email_address") ?? "")).trim();
     if (!employee_name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_address)) {
       toast.error("A name and valid email address are required.");
       return;
@@ -2029,10 +2018,38 @@ function EmployeeEmailsPanel() {
 
   const formOpen = creating || editing !== null;
 
+  // Open form with populated email state
+  const openCreateForm = () => {
+    setCreating(true);
+    setEditing(null);
+    setFormEmail("");
+  };
+
+  const openEditForm = (item: EmployeeEmail) => {
+    setEditing(item);
+    setCreating(false);
+    setFormEmail(item.email_address);
+  };
+
+  const copyToClipboard = (text: string) => {
+    void navigator.clipboard.writeText(text);
+    toast.success(`Copied "${text}" to clipboard.`);
+  };
+
+  // Helper for applying domain suffix
+  const applyDomainSuffix = (suffix: string) => {
+    if (!formEmail.includes("@")) {
+      setFormEmail(`${formEmail}${suffix}`);
+    } else {
+      const prefix = formEmail.split("@")[0];
+      setFormEmail(`${prefix}${suffix}`);
+    }
+  };
+
   // Filtered & Sorted Employee Emails
   const filteredData = useMemo(() => {
     const result = data.filter((item) => {
-      // Name / Surname Letter Filter
+      // Initial Letter Filter (First or Last name)
       if (letterFilter !== "ALL") {
         const parts = item.employee_name.trim().split(/\s+/);
         const firstLetterOfFirstName = parts[0]?.[0]?.toUpperCase() ?? "";
@@ -2079,58 +2096,139 @@ function EmployeeEmailsPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+      {/* ── Header with Hostinger Actions ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="truncate text-lg font-bold">Employee Directory & Emails</h2>
-          <p className="text-xs text-muted-foreground">Manage organization contact directory and internal accounts.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-foreground">Employee Directory & Hostinger Emails</h2>
+            <Badge variant="outline" className="border-[#673DE6]/40 bg-[#673DE6]/10 text-[#673DE6] text-[11px] font-semibold">
+              Hostinger Custom Domain
+            </Badge>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Manage organization email mailboxes on custom domain.
+          </p>
         </div>
-        {!formOpen && (
-          <Button
-            onClick={() => {
-              setCreating(true);
-              setEditing(null);
-            }}
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href="https://mail.hostinger.com"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex"
           >
-            <Plus className="size-4" /> New record
+            <Button
+              size="sm"
+              className="gap-1.5 bg-[#673DE6] hover:bg-[#5229cb] text-white shadow-sm text-xs font-semibold"
+            >
+              <Inbox className="size-3.5" />
+              Open Hostinger Webmail
+              <ExternalLink className="size-3" />
+            </Button>
+          </a>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSetupGuide(true)}
+            className="gap-1.5 text-xs"
+          >
+            <HelpCircle className="size-3.5 text-muted-foreground" />
+            Email Client Settings
           </Button>
-        )}
+
+          {!formOpen && (
+            <Button size="sm" onClick={openCreateForm} className="gap-1.5 text-xs">
+              <Plus className="size-3.5" /> Add Employee
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* ── Add / Edit Employee Form ── */}
       {formOpen && (
         <form
           onSubmit={onSubmit}
-          className="animate-fade-up grid gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card sm:grid-cols-2"
+          className="animate-fade-up space-y-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card"
         >
-          <div>
-            <Label htmlFor="employee_name">Full Name *</Label>
-            <Input
-              id="employee_name"
-              name="employee_name"
-              placeholder="e.g. Martha Shikongo"
-              defaultValue={editing?.employee_name ?? ""}
-              required
-            />
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h3 className="font-bold text-foreground text-sm">
+              {editing ? `Edit Employee Record: ${editing.employee_name}` : "Add New Employee & Hostinger Mailbox"}
+            </h3>
           </div>
-          <div>
-            <Label htmlFor="email_address">Email address *</Label>
-            <Input
-              id="email_address"
-              name="email_address"
-              type="email"
-              placeholder="e.g. m.shikongo@crgconsulting.org"
-              defaultValue={editing?.email_address ?? ""}
-              required
-            />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="employee_name">Full Name *</Label>
+              <Input
+                id="employee_name"
+                name="employee_name"
+                placeholder="e.g. Martha Shikongo"
+                defaultValue={editing?.employee_name ?? ""}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email_address">Hostinger Email Address *</Label>
+              <Input
+                id="email_address"
+                name="email_address"
+                type="email"
+                placeholder="e.g. m.shikongo@domain.com"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                required
+              />
+              {/* Domain suggestion chips */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="text-muted-foreground">Quick Domain:</span>
+                <button
+                  type="button"
+                  onClick={() => applyDomainSuffix("@crg-research.co.za")}
+                  className="rounded bg-muted px-1.5 py-0.5 font-mono text-accent hover:bg-accent/15 transition-colors"
+                >
+                  + @crg-research.co.za
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyDomainSuffix("@crg-research.com")}
+                  className="rounded bg-muted px-1.5 py-0.5 font-mono text-accent hover:bg-accent/15 transition-colors"
+                >
+                  + @crg-research.com
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                name="department"
+                placeholder="e.g. Research & Advisory"
+                defaultValue={editing?.department ?? ""}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="position">Position / Job Title</Label>
+              <Input
+                id="position"
+                name="position"
+                placeholder="e.g. Senior Economic Analyst"
+                defaultValue={editing?.position ?? ""}
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="department">Department</Label>
-            <Input id="department" name="department" placeholder="e.g. Research & Policy" defaultValue={editing?.department ?? ""} />
+
+          <div className="rounded-lg bg-surface border border-border/80 p-3 text-xs text-muted-foreground flex items-center gap-2">
+            <Globe className="size-4 text-primary shrink-0" />
+            <span>
+              <strong>Note:</strong> Make sure this mailbox is created in your <strong>Hostinger hPanel</strong> (<a href="https://mail.hostinger.com" target="_blank" rel="noreferrer" className="text-accent underline font-medium">mail.hostinger.com</a>) so the employee can receive and send emails.
+            </span>
           </div>
-          <div>
-            <Label htmlFor="position">Position / Job Title</Label>
-            <Input id="position" name="position" placeholder="e.g. Senior Researcher" defaultValue={editing?.position ?? ""} />
-          </div>
-          <div className="flex flex-wrap gap-3 sm:col-span-2 pt-2">
+
+          <div className="flex flex-wrap gap-3 pt-2">
             <Button type="submit" disabled={save.isPending}>
               {save.isPending ? "Saving..." : "Save Record"}
             </Button>
@@ -2140,6 +2238,7 @@ function EmployeeEmailsPanel() {
               onClick={() => {
                 setEditing(null);
                 setCreating(false);
+                setFormEmail("");
               }}
             >
               Cancel
@@ -2148,11 +2247,10 @@ function EmployeeEmailsPanel() {
         </form>
       )}
 
-      {/* Search, Letter Filters, Date Created & Sort Controls */}
+      {/* ── Search, Date Created & Sort Controls ── */}
       {!formOpen && data.length > 0 && (
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Search */}
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -2171,9 +2269,7 @@ function EmployeeEmailsPanel() {
               )}
             </div>
 
-            {/* Date Created & Sort By Selectors */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Date Created Filter */}
               <div className="flex items-center gap-1.5">
                 <Calendar className="size-3.5 text-muted-foreground" />
                 <Label htmlFor="empDate" className="text-xs shrink-0 font-medium">
@@ -2185,7 +2281,7 @@ function EmployeeEmailsPanel() {
                   onChange={(e) => setDateCreatedFilter(e.target.value)}
                   className="h-9 rounded-md border border-input bg-background px-2.5 text-xs"
                 >
-                  <option value="ALL">All Time</option>
+                  <option value="ALL">All Dates</option>
                   <option value="THIS_MONTH">This Month</option>
                   <option value="LAST_30_DAYS">Past 30 Days</option>
                   <option value="LAST_90_DAYS">Past 90 Days</option>
@@ -2194,7 +2290,6 @@ function EmployeeEmailsPanel() {
                 </select>
               </div>
 
-              {/* Sort By Filter */}
               <div className="flex items-center gap-1.5">
                 <ArrowUpDown className="size-3.5 text-muted-foreground" />
                 <Label htmlFor="empSort" className="text-xs shrink-0 font-medium">
@@ -2217,7 +2312,6 @@ function EmployeeEmailsPanel() {
             </div>
           </div>
 
-          {/* Custom Date Range if selected */}
           {dateCreatedFilter === "CUSTOM" && (
             <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/60 text-xs">
               <span className="font-semibold text-muted-foreground">From:</span>
@@ -2250,7 +2344,7 @@ function EmployeeEmailsPanel() {
             </div>
           )}
 
-          {/* Alphabet Letter Selector for Name / Surname filtering */}
+          {/* Alphabet Letter Selector for Initial filtering */}
           <div className="pt-2 border-t border-border/60">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -2297,42 +2391,89 @@ function EmployeeEmailsPanel() {
           {filteredData.map((item) => (
             <li
               key={item.id}
-              className="grid gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-sm font-bold">{item.employee_name}</h3>
+                  <h3 className="truncate text-sm font-bold text-foreground">{item.employee_name}</h3>
                   <Badge variant={item.status === "active" ? "default" : "secondary"}>
                     {item.status}
                   </Badge>
+                  {item.department && (
+                    <Badge variant="outline" className="text-[11px]">
+                      {item.department}
+                    </Badge>
+                  )}
                   {item.created_at && (
                     <span className="text-[11px] text-muted-foreground">
                       Added: {new Date(item.created_at).toLocaleDateString("en-GB")}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                  {item.email_address}
-                  {item.department ? ` · ${item.department}` : ""}
-                  {item.position ? ` · ${item.position}` : ""}
-                </p>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="font-mono text-foreground font-medium flex items-center gap-1">
+                    <Mail className="size-3.5 text-primary" />
+                    {item.email_address}
+                  </span>
+                  {item.position && (
+                    <span>· {item.position}</span>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => toggleStatus.mutate(item)}>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
+                {/* Copy email */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1 text-xs"
+                  onClick={() => copyToClipboard(item.email_address)}
+                  title="Copy email address"
+                >
+                  <Copy className="size-3.5" />
+                  Copy
+                </Button>
+
+                {/* Send Email Mailto */}
+                <a href={`mailto:${item.email_address}`}>
+                  <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" title="Send email">
+                    <Mail className="size-3.5" />
+                    Email
+                  </Button>
+                </a>
+
+                {/* Suspend / Reactivate */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => toggleStatus.mutate(item)}
+                >
                   {item.status === "active" ? "Suspend" : "Reactivate"}
                 </Button>
+
+                {/* Edit */}
                 <Button
                   size="icon"
                   variant="outline"
-                  onClick={() => {
-                    setEditing(item);
-                    setCreating(false);
-                  }}
+                  className="size-8"
+                  onClick={() => openEditForm(item)}
+                  title="Edit employee record"
                 >
-                  <Pencil className="size-4" />
+                  <Pencil className="size-3.5" />
                 </Button>
-                <Button size="icon" variant="destructive" onClick={() => setDeleteId(item.id)}>
-                  <Trash2 className="size-4" />
+
+                {/* Delete */}
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="size-8"
+                  onClick={() => setDeleteId(item.id)}
+                  title="Delete employee record"
+                >
+                  <Trash2 className="size-3.5" />
                 </Button>
               </div>
             </li>
@@ -2340,10 +2481,141 @@ function EmployeeEmailsPanel() {
         </ul>
       )}
 
+      {/* ── Hostinger Connection Settings Modal ── */}
+      <AlertDialog open={showSetupGuide} onOpenChange={setShowSetupGuide}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="grid size-9 place-items-center rounded-lg bg-[#673DE6]/10 text-[#673DE6]">
+                <Inbox className="size-5" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-base font-bold text-foreground">
+                  Hostinger Email Configuration & Client Setup
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-xs">
+                  Connect employee mailboxes to Outlook, Apple Mail, Gmail, iPhone, or Android.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            {/* Quick Webmail Access */}
+            <div className="rounded-xl border border-[#673DE6]/30 bg-[#673DE6]/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-bold text-[#673DE6]">Direct Webmail Login</p>
+                <p className="text-muted-foreground text-[11px] mt-0.5">
+                  Employees can log in with their full email and password anytime.
+                </p>
+              </div>
+              <a
+                href="https://mail.hostinger.com"
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0"
+              >
+                <Button size="sm" className="bg-[#673DE6] hover:bg-[#5229cb] text-white gap-1.5 text-xs">
+                  <Inbox className="size-3.5" />
+                  Open mail.hostinger.com
+                  <ExternalLink className="size-3" />
+                </Button>
+              </a>
+            </div>
+
+            {/* Server Settings Cards */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* IMAP Incoming */}
+              <div className="rounded-lg border border-border bg-card p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-foreground">Incoming Server (IMAP)</span>
+                  <Badge variant="default" className="text-[10px]">Recommended</Badge>
+                </div>
+                <div className="space-y-1 font-mono text-[11px] text-muted-foreground">
+                  <div className="flex justify-between items-center">
+                    <span>Server:</span>
+                    <strong className="text-foreground">imap.hostinger.com</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Port:</span>
+                    <strong className="text-foreground">993</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Encryption:</span>
+                    <strong className="text-foreground">SSL / TLS</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Username:</span>
+                    <strong className="text-foreground">Full email address</strong>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-[11px] gap-1"
+                  onClick={() => copyToClipboard("imap.hostinger.com:993")}
+                >
+                  <Copy className="size-3" /> Copy IMAP Settings
+                </Button>
+              </div>
+
+              {/* SMTP Outgoing */}
+              <div className="rounded-lg border border-border bg-card p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-foreground">Outgoing Server (SMTP)</span>
+                  <Badge variant="secondary" className="text-[10px]">Required</Badge>
+                </div>
+                <div className="space-y-1 font-mono text-[11px] text-muted-foreground">
+                  <div className="flex justify-between items-center">
+                    <span>Server:</span>
+                    <strong className="text-foreground">smtp.hostinger.com</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Port:</span>
+                    <strong className="text-foreground">465 (or 587)</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Encryption:</span>
+                    <strong className="text-foreground">SSL / TLS</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Authentication:</span>
+                    <strong className="text-foreground">Same as incoming</strong>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-[11px] gap-1"
+                  onClick={() => copyToClipboard("smtp.hostinger.com:465")}
+                >
+                  <Copy className="size-3" /> Copy SMTP Settings
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Steps for Devices */}
+            <div className="rounded-lg border border-border bg-surface p-3.5 space-y-1.5 text-muted-foreground">
+              <p className="font-bold text-foreground text-xs">How to add to devices:</p>
+              <ul className="list-disc list-inside space-y-1 text-[11px]">
+                <li><strong>Apple iPhone / iPad:</strong> Go to Settings → Mail → Accounts → Add Account → Other → Add Mail Account.</li>
+                <li><strong>Android / Samsung:</strong> Open Gmail app → Tap Profile icon → Add another account → Other (IMAP).</li>
+                <li><strong>Outlook (Windows / Mac):</strong> File → Add Account → Enter email → Choose IMAP → Enter the Hostinger server details above.</li>
+              </ul>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowSetupGuide(false)}>Close Guide</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Confirm Delete Dialog ── */}
       <ConfirmDialog
         open={deleteId !== null}
         title="Delete this employee record?"
-        description="This permanently removes the record. Consider suspending instead."
+        description="This permanently removes the record from the directory. Consider suspending instead."
         onCancel={() => setDeleteId(null)}
         onConfirm={() => deleteId && remove.mutate(deleteId)}
       />
