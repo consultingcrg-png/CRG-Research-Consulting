@@ -2977,22 +2977,39 @@ function ProfilePanel() {
           .eq("id", user.id)
           .maybeSingle();
 
-        if (profile) {
-          setFirstName(profile.first_name || (user.user_metadata?.["first_name"] as string) || "");
-          setLastName(profile.last_name || (user.user_metadata?.["last_name"] as string) || "");
+        let resolvedFirst = "";
+        let resolvedLast = "";
+
+        if (profile?.first_name || profile?.last_name) {
+          resolvedFirst = profile.first_name || "";
+          resolvedLast = profile.last_name || "";
+        } else if (profile?.full_name) {
+          const parts = profile.full_name.trim().split(" ");
+          resolvedFirst = parts[0] || "";
+          resolvedLast = parts.slice(1).join(" ") || "";
+        } else if (user.user_metadata?.["first_name"] || user.user_metadata?.["last_name"]) {
+          resolvedFirst = (user.user_metadata["first_name"] as string) || "";
+          resolvedLast = (user.user_metadata["last_name"] as string) || "";
+        } else if (user.user_metadata?.["full_name"]) {
+          const parts = (user.user_metadata["full_name"] as string).trim().split(" ");
+          resolvedFirst = parts[0] || "";
+          resolvedLast = parts.slice(1).join(" ") || "";
         } else {
-          // Fallback to user_metadata
-          const metaFirst = (user.user_metadata?.["first_name"] as string) || "";
-          const metaLast = (user.user_metadata?.["last_name"] as string) || "";
-          if (metaFirst || metaLast) {
-            setFirstName(metaFirst);
-            setLastName(metaLast);
-          } else if (user.user_metadata?.["full_name"]) {
-            const parts = (user.user_metadata["full_name"] as string).split(" ");
-            setFirstName(parts[0] || "");
-            setLastName(parts.slice(1).join(" ") || "");
+          // Check admin_invitations table by email
+          const { data: invitation } = await supabase
+            .from("admin_invitations")
+            .select("full_name")
+            .eq("email", user.email ?? "")
+            .maybeSingle();
+          if (invitation?.full_name) {
+            const parts = invitation.full_name.trim().split(" ");
+            resolvedFirst = parts[0] || "";
+            resolvedLast = parts.slice(1).join(" ") || "";
           }
         }
+
+        setFirstName(resolvedFirst);
+        setLastName(resolvedLast);
       } catch (err) {
         console.error("Error loading profile:", err);
       } finally {
@@ -3110,37 +3127,58 @@ function ProfilePanel() {
     );
   }
 
-  const displayName = `${firstName} ${lastName}`.trim() || email || "Admin";
+  const fullNameDisplay = `${firstName} ${lastName}`.trim();
   const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || email[0]?.toUpperCase() || "A";
 
   return (
     <div className="space-y-8">
-      {/* ── Header ── */}
-      <div>
-        <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
-          <User className="size-5 text-primary" />
-          Admin Profile & Security
-        </h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Manage your personal administrator details and update your password.
-        </p>
+      {/* ── Top Header Banner with Logged-in Admin Name ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <User className="size-6 text-primary" />
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">
+              {fullNameDisplay ? fullNameDisplay : "Administrator Profile"}
+            </h2>
+            <Badge variant="default" className="gap-1 bg-primary text-primary-foreground text-xs py-0.5">
+              <Shield className="size-3" /> Admin
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Currently logged in: <strong className="text-foreground">{firstName || "—"}</strong> (First Name) <strong className="text-foreground">{lastName || "—"}</strong> (Last Name) · <span className="font-mono text-xs">{email}</span>
+          </p>
+        </div>
       </div>
 
-      {/* ── User Overview Banner ── */}
-      <div className="flex flex-col sm:flex-row items-center gap-5 rounded-2xl border-2 border-primary bg-card p-6 shadow-card">
+      {/* ── User Overview Card ── */}
+      <div className="flex flex-col sm:flex-row items-center gap-6 rounded-2xl border-2 border-primary bg-card p-6 shadow-card">
         <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-md">
           {initials}
         </div>
-        <div className="text-center sm:text-left min-w-0 flex-1">
+        <div className="text-center sm:text-left min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-            <h3 className="text-lg font-bold text-foreground truncate">{displayName}</h3>
-            <Badge variant="default" className="gap-1 bg-primary text-primary-foreground text-xs py-0.5">
-              <Shield className="size-3" /> Administrator
+            <h3 className="text-xl font-bold text-foreground truncate">
+              {fullNameDisplay ? fullNameDisplay : email}
+            </h3>
+            <Badge variant="outline" className="border-emerald-500 bg-emerald-50 text-emerald-700 text-xs font-semibold">
+              Active Session
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-            <Mail className="size-3.5" /> {email}
-          </p>
+
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs">
+            <div className="rounded-lg bg-surface border border-border px-3 py-1.5">
+              <span className="text-muted-foreground">First Name:</span>{" "}
+              <strong className="text-foreground">{firstName || "Not set"}</strong>
+            </div>
+            <div className="rounded-lg bg-surface border border-border px-3 py-1.5">
+              <span className="text-muted-foreground">Second / Last Name:</span>{" "}
+              <strong className="text-foreground">{lastName || "Not set"}</strong>
+            </div>
+            <div className="rounded-lg bg-surface border border-border px-3 py-1.5">
+              <span className="text-muted-foreground">Email:</span>{" "}
+              <strong className="text-foreground">{email}</strong>
+            </div>
+          </div>
         </div>
       </div>
 
