@@ -20,7 +20,6 @@ import {
   Plane,
   SearchCheck,
   ShieldHalf,
-  Sparkles,
   TreePine,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,77 +29,102 @@ import { RecentWork } from "@/components/site/RecentWork";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import LocationsMap from "@/components/site/LocationsMap";
-
-const TITLE = "CRG Research & Consulting | Research & Strategy, Windhoek Namibia";
-const DESCRIPTION =
-  "CRG Research & Consulting delivers evidence-based research and strategic advisory across land, energy, mining, health and international development in Namibia, Kenya and Nigeria.";
-const CANONICAL_URL = "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/";
-const OG_IMAGE_URL =
-  "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg";
+import {
+  SITE_NAME,
+  DEFAULT_TITLE,
+  HOME_DESCRIPTION,
+  KEYWORDS,
+  OG_IMAGE,
+  SITE_CONTACT,
+  SOCIAL_LINKEDIN,
+  absolutize,
+  seo,
+  siteUrl,
+} from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: TITLE },
-      { name: "description", content: DESCRIPTION },
-      {
-        name: "keywords",
-        content:
-          "CRG Research and Consulting, research consultancy Namibia, strategic consulting Windhoek, land and natural resources research, international development consulting Africa, policy research Namibia",
+  head: () => {
+    const { meta, links } = seo({
+      title: DEFAULT_TITLE,
+      description: HOME_DESCRIPTION,
+      keywords: KEYWORDS,
+    });
+    const url = siteUrl() || undefined;
+    const orgJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": url ? `${url}#organization` : undefined,
+      name: SITE_NAME,
+      url: url,
+      logo: absolutize("/crg-logo.png"),
+      foundingDate: "2021",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: SITE_CONTACT.streetAddress,
+        addressLocality: SITE_CONTACT.addressLocality,
+        addressRegion: SITE_CONTACT.addressRegion,
+        addressCountry: SITE_CONTACT.addressCountry,
       },
-      { property: "og:site_name", content: "CRG Research & Consulting" },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESCRIPTION },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: CANONICAL_URL },
-      { property: "og:image", content: OG_IMAGE_URL },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "CRG Research & Consulting Team and Global Advisory" },
-      { property: "og:locale", content: "en_US" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESCRIPTION },
-      { name: "twitter:image", content: OG_IMAGE_URL },
-      { name: "twitter:image:alt", content: "CRG Research & Consulting" },
-    ],
-    links: [
-      { rel: "canonical", href: CANONICAL_URL },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "ProfessionalService",
-          name: "CRG Research & Consulting",
-          description: DESCRIPTION,
-          url: CANONICAL_URL,
-          image: OG_IMAGE_URL,
-          telephone: "+264 81 3288657",
-          areaServed: [
-            { "@type": "Country", name: "Namibia" },
-            { "@type": "Country", name: "Kenya" },
-            { "@type": "Country", name: "Nigeria" },
-          ],
-          foundingDate: "2021",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "6 Luther Street, The Village, Eros",
-            addressLocality: "Windhoek",
-            addressRegion: "Khomas",
-            addressCountry: "NA",
-          },
-          geo: {
-            "@type": "GeoCoordinates",
-            latitude: -22.5609,
-            longitude: 17.0898,
-          },
-          sameAs: ["https://www.linkedin.com/company/crg-research-consulting/"],
-        }),
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: SITE_CONTACT.geo.latitude,
+        longitude: SITE_CONTACT.geo.longitude,
       },
-    ],
-  }),
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: SITE_CONTACT.telephone,
+        contactType: "customer service",
+        areaServed: "NA",
+        availableLanguage: ["English"],
+      },
+      sameAs: [SOCIAL_LINKEDIN],
+    };
+    const serviceJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      name: SITE_NAME,
+      description: HOME_DESCRIPTION,
+      url: url,
+      image: absolutize(OG_IMAGE),
+      telephone: SITE_CONTACT.telephone,
+      areaServed: [
+        { "@type": "Country", name: "Namibia" },
+        { "@type": "Country", name: "Kenya" },
+        { "@type": "Country", name: "Nigeria" },
+      ],
+      foundingDate: "2021",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: SITE_CONTACT.streetAddress,
+        addressLocality: SITE_CONTACT.addressLocality,
+        addressRegion: SITE_CONTACT.addressRegion,
+        addressCountry: SITE_CONTACT.addressCountry,
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: SITE_CONTACT.geo.latitude,
+        longitude: SITE_CONTACT.geo.longitude,
+      },
+      sameAs: [SOCIAL_LINKEDIN],
+    };
+
+    return {
+      meta: [
+        ...meta,
+        { name: "geo.region", content: "NA-KH" },
+        { name: "geo.placename", content: "Windhoek, Namibia" },
+        { name: "geo.position", content: "-22.5609;17.0898" },
+        { name: "ICBM", content: "-22.5609,17.0898" },
+      ],
+      links,
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify([orgJsonLd, serviceJsonLd]),
+        },
+      ],
+    };
+  },
   component: Index,
 });
 
@@ -439,9 +463,7 @@ function Index() {
                 onSubmit={onSubmit}
                 className="rounded-2xl border-2 border-primary bg-card p-7 shadow-lift"
               >
-                <h3 className="flex items-center gap-2 text-xl font-bold">
-                  <Sparkles className="size-5 text-accent" /> Send a Message
-                </h3>
+                <h3 className="text-xl font-bold">Send a Message</h3>
                 <div className="mt-6 space-y-4">
                   <input
                     name="name"
