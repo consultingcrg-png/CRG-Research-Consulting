@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ExternalLink, Newspaper, Maximize2, Images } from "lucide-react";
+import { ArrowRight, CalendarDays, ExternalLink, Newspaper, Maximize2, Images } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Reveal } from "./Reveal";
 import { Badge } from "@/components/ui/badge";
@@ -64,13 +64,26 @@ export function RecentNews() {
             </p>
           </Reveal>
         ) : (
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {latestItems.map((article, i) => (
-              <Reveal key={article.id} delay={i * 90}>
-                <NewsCard article={article} />
-              </Reveal>
-            ))}
-          </div>
+          <>
+            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {latestItems.map((article, i) => (
+                <Reveal key={article.id} delay={i * 90}>
+                  <NewsCard article={article} />
+                </Reveal>
+              ))}
+            </div>
+
+            {/* View All News Button */}
+            <div className="mt-12 text-center">
+              <a
+                href="/news"
+                className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                View all news ({allItems.length})
+                <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </>
         )}
       </div>
     </section>

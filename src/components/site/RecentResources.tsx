@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Download, ExternalLink, FileText, Layers, User } from "lucide-react";
+import { ArrowRight, CalendarDays, Download, ExternalLink, FileText, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Reveal } from "./Reveal";
 import { Badge } from "@/components/ui/badge";
@@ -59,81 +59,94 @@ export function RecentResources() {
             </p>
           </Reveal>
         ) : (
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {latestItems.map((item, i) => (
-              <Reveal key={item.id} delay={i * 90} as="article">
-                <article className="hover-lift flex h-full flex-col justify-between overflow-hidden rounded-xl border-2 border-primary bg-card p-6 shadow-card">
-                  <div>
-                    {/* Top Row: Date & Badges */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-                        <CalendarDays className="size-3.5" />
-                        {new Date(item.publication_date).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Badge variant="default" className="text-[11px] bg-accent text-accent-foreground">
-                          {item.resource_type}
-                        </Badge>
-                        {item.sector && (
-                          <Badge variant="outline" className="text-[11px]">
-                            {item.sector}
+          <>
+            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {latestItems.map((item, i) => (
+                <Reveal key={item.id} delay={i * 90} as="article">
+                  <article className="hover-lift flex h-full flex-col justify-between overflow-hidden rounded-xl border-2 border-primary bg-card p-6 shadow-card">
+                    <div>
+                      {/* Top Row: Date & Badges */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-accent">
+                          <CalendarDays className="size-3.5" />
+                          {new Date(item.publication_date).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge variant="default" className="text-[11px] bg-accent text-accent-foreground">
+                            {item.resource_type}
                           </Badge>
+                          {item.sector && (
+                            <Badge variant="outline" className="text-[11px]">
+                              {item.sector}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="mt-3.5 text-lg font-bold text-foreground leading-snug">{item.title}</h3>
+
+                      {/* Author */}
+                      {item.author && (
+                        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                          <User className="size-3.5 text-accent" />
+                          {item.author}
+                        </p>
+                      )}
+
+                      {/* Description */}
+                      <p className="mt-3 text-sm whitespace-pre-line text-muted-foreground leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {/* Actions (Download / Link) */}
+                    {(item.file_url || item.external_url) && (
+                      <div className="mt-6 pt-4 border-t border-border/60 flex items-center gap-4">
+                        {item.file_url && (
+                          <a
+                            href={item.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
+                          >
+                            <Download className="size-3.5" />
+                            Download Document
+                          </a>
+                        )}
+                        {item.external_url && (
+                          <a
+                            href={item.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
+                          >
+                            <ExternalLink className="size-3.5" />
+                            External Source
+                          </a>
                         )}
                       </div>
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="mt-3.5 text-lg font-bold text-foreground leading-snug">{item.title}</h3>
-
-                    {/* Author */}
-                    {item.author && (
-                      <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                        <User className="size-3.5 text-accent" />
-                        {item.author}
-                      </p>
                     )}
+                  </article>
+                </Reveal>
+              ))}
+            </div>
 
-                    {/* Description */}
-                    <p className="mt-3 text-sm whitespace-pre-line text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  {/* Actions (Download / Link) */}
-                  {(item.file_url || item.external_url) && (
-                    <div className="mt-6 pt-4 border-t border-border/60 flex items-center gap-4">
-                      {item.file_url && (
-                        <a
-                          href={item.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
-                        >
-                          <Download className="size-3.5" />
-                          Download Document
-                        </a>
-                      )}
-                      {item.external_url && (
-                        <a
-                          href={item.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline"
-                        >
-                          <ExternalLink className="size-3.5" />
-                          External Source
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </article>
-              </Reveal>
-            ))}
-          </div>
+            {/* View All Resources Button */}
+            <div className="mt-12 text-center">
+              <a
+                href="/resources"
+                className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-8 py-3.5 text-sm font-semibold text-accent-foreground shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                View all resources ({allItems.length})
+                <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </>
         )}
       </div>
     </section>

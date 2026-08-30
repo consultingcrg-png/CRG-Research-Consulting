@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as StaffAccessCrgRouteImport } from './routes/staff-access-crg'
 import { Route as AuthenticatedCrgAdminRouteImport } from './routes/_authenticated/crg-admin'
 
@@ -24,9 +26,19 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StaffAccessCrgRoute = StaffAccessCrgRouteImport.update({
@@ -42,13 +54,17 @@ const AuthenticatedCrgAdminRoute = AuthenticatedCrgAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/news': typeof NewsRoute
   '/projects': typeof ProjectsRoute
+  '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/news': typeof NewsRoute
   '/projects': typeof ProjectsRoute
+  '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
 }
@@ -56,20 +72,36 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/news': typeof NewsRoute
   '/projects': typeof ProjectsRoute
+  '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/_authenticated/crg-admin': typeof AuthenticatedCrgAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/projects' | '/staff-access-crg' | '/crg-admin'
+  fullPaths:
+    | '/'
+    | '/news'
+    | '/projects'
+    | '/resources'
+    | '/staff-access-crg'
+    | '/crg-admin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/projects' | '/staff-access-crg' | '/crg-admin'
+  to:
+    | '/'
+    | '/news'
+    | '/projects'
+    | '/resources'
+    | '/staff-access-crg'
+    | '/crg-admin'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/news'
     | '/projects'
+    | '/resources'
     | '/staff-access-crg'
     | '/_authenticated/crg-admin'
   fileRoutesById: FileRoutesById
@@ -77,7 +109,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  NewsRoute: typeof NewsRoute
   ProjectsRoute: typeof ProjectsRoute
+  ResourcesRoute: typeof ResourcesRoute
   StaffAccessCrgRoute: typeof StaffAccessCrgRoute
 }
 
@@ -97,11 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects': {
       id: '/projects'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/staff-access-crg': {
@@ -135,7 +183,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  NewsRoute: NewsRoute,
   ProjectsRoute: ProjectsRoute,
+  ResourcesRoute: ResourcesRoute,
   StaffAccessCrgRoute: StaffAccessCrgRoute,
 }
 export const routeTree = rootRouteImport

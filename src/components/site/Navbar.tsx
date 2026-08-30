@@ -11,8 +11,8 @@ const NAV_ITEMS = [
   { label: "Services", href: "/#services", dot: "var(--chart-3)" },
   { label: "Sectors", href: "/#sectors", dot: "var(--chart-4)" },
   { label: "Projects", href: "/projects", dot: "var(--chart-1)" },
-  { label: "Resources", href: "/#resources", dot: "var(--chart-2)" },
-  { label: "News", href: "/#news", dot: "var(--chart-3)" },
+  { label: "Resources", href: "/resources", dot: "var(--chart-2)" },
+  { label: "News", href: "/news", dot: "var(--chart-3)" },
   { label: "Partners", href: "/#partners", dot: "var(--chart-4)" },
 ];
 
