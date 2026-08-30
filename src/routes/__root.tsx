@@ -7,10 +7,10 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { seo } from "../lib/seo";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -38,9 +38,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -74,58 +71,24 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CRG Research & Consulting" },
-      {
-        name: "description",
-        content:
-          "Cross-sector research and strategic consulting for governments, organisations and communities.",
-      },
-      { name: "author", content: "CRG Research & Consulting" },
-      { property: "og:site_name", content: "CRG Research & Consulting" },
-      { property: "og:title", content: "CRG Research & Consulting" },
-      {
-        property: "og:description",
-        content:
-          "Cross-sector research and strategic consulting for governments, organisations and communities.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:locale", content: "en_US" },
-      { property: "og:url", content: "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/" },
-      {
-        property: "og:image",
-        content:
-          "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg",
-      },
-      { property: "og:image:alt", content: "CRG Research & Consulting Advisory & Fieldwork" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "CRG Research & Consulting" },
-      {
-        name: "twitter:description",
-        content:
-          "Cross-sector research and strategic consulting for governments, organisations and communities.",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg",
-      },
-      { name: "twitter:image:alt", content: "CRG Research & Consulting Advisory & Fieldwork" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "canonical", href: "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/" },
-    ],
-  }),
+  head: () => {
+    const { meta, links } = seo({ canonical: false });
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        ...meta,
+      ],
+      links: [
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+        { rel: "icon", href: "/favicon.png", type: "image/png" },
+        ...links,
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
