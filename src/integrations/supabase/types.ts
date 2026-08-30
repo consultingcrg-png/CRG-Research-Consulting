@@ -110,6 +110,102 @@ export type Database = {
         }
         Relationships: []
       }
+      resources: {
+        Row: {
+          author: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          external_url: string | null
+          file_url: string | null
+          id: string
+          publication_date: string
+          resource_type: string
+          sector: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          publication_date?: string
+          resource_type?: string
+          sector?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          publication_date?: string
+          resource_type?: string
+          sector?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          external_link: string | null
+          id: string
+          image_urls: Json
+          news_date: string
+          sector: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          external_link?: string | null
+          id?: string
+          image_urls?: Json
+          news_date?: string
+          sector?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          external_link?: string | null
+          id?: string
+          image_urls?: Json
+          news_date?: string
+          sector?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
