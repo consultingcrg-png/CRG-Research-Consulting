@@ -28,7 +28,7 @@ const LOCATIONS: OfficeLocation[] = [
     country: "Namibia",
     countryCode: "NA",
     coordinates: [17.0658, -22.5609],
-    address: "6 Luther Street, The Village, Eros",
+    address: "6 Luther Street",
     isPrimary: true,
     googleMapsQuery: "6 Luther Street, The Village, Eros, Windhoek, Namibia",
   },

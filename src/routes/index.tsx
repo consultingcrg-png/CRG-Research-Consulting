@@ -180,14 +180,14 @@ const SECTORS = [
 ];
 
 const HUBS = [
-  { title: "Namibia", text: "Windhoek Headquarters" },
-  { title: "Kenya", text: "East Africa Hub" },
-  { title: "Nigeria", text: "West Africa Hub" },
+  { title: "Namibia" },
+  { title: "Kenya" },
+  { title: "Nigeria" },
 ];
 
 const SECTOR_OPTIONS = SECTORS.map((s) => s.title);
 
-const MAP_QUERY = "6 Luther Street, The Village, Eros Windhoek, Namibia";
+const MAP_QUERY = "6 Luther Street";
 
 function Index() {
   const [submitting, setSubmitting] = useState(false);
@@ -382,9 +382,6 @@ function Index() {
         <section id="partners" className="scroll-mt-24 py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl">
-              <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                PARTNERS
-              </span>
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Partners</h2>
               <p className="mt-3 text-muted-foreground">
                 With strategic partner companies across key regional growth centers.
@@ -399,7 +396,6 @@ function Index() {
                       <MapPin className="size-6" />
                     </span>
                     <h3 className="mt-4 text-xl font-bold">{hub.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{hub.text}</p>
                   </div>
                 </Reveal>
               ))}
