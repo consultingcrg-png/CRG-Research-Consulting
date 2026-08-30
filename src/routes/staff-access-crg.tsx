@@ -85,9 +85,9 @@ function StaffAccess() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-5 py-16">
       <div className="animate-scale-in w-full max-w-sm rounded-2xl border-2 border-primary bg-card p-8 shadow-lift">
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
-          <ShieldCheck className="size-6" />
-        </span>
+        <div className="flex justify-center">
+          <img src="/crg-logo.png" alt="CRG logo" className="h-12 w-auto object-contain" />
+        </div>
         <h1 className="mt-5 text-center text-lg font-bold">Staff Access</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Authorised personnel only.

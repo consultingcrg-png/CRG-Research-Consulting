@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import logo from "@/assets/CRG_LOGO_1.png.asset.json";
+const LOGO_URL = "/crg-logo.png";
 
 const IDLE_MS = 30 * 60 * 1000;
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5;
@@ -68,15 +68,30 @@ function AdminPortal() {
   // Role check
   useEffect(() => {
     void (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return setIsAdmin(false);
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userData.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      setIsAdmin(Boolean(data));
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData?.user) {
+          console.error("Auth user check failed:", userError);
+          setIsAdmin(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userData.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+
+        if (error) {
+          console.error("User roles query error:", error);
+        }
+
+        setIsAdmin(Boolean(data && data.role === "admin"));
+      } catch (err) {
+        console.error("Unexpected error checking role:", err);
+        setIsAdmin(false);
+      }
     })();
   }, []);
 
@@ -100,6 +115,14 @@ function AdminPortal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (isAdmin === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface px-5">
+        <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   if (isAdmin === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface px-5">
@@ -122,7 +145,7 @@ function AdminPortal() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <img src={logo.url} alt="CRG logo" className="h-9 w-auto shrink-0 object-contain" />
+            <img src={LOGO_URL} alt="CRG logo" className="h-9 w-auto shrink-0 object-contain" />
             <h1 className="truncate text-base font-bold sm:text-lg">Admin Portal</h1>
           </div>
           <Button variant="outline" size="sm" onClick={signOut}>
