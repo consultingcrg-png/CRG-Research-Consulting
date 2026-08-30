@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SLIDES = [
@@ -37,7 +37,6 @@ const DURATION = 8000;
 
 export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
   // Slides that have been loaded or primed for preloading
   const [loaded, setLoaded] = useState<number[]>([0, 1]);
   const touchStartX = useRef<number | null>(null);
@@ -58,14 +57,14 @@ export function HeroSlideshow() {
     });
   }, []);
 
-  // Continuous 8-second loop, cleanly restarted on index or pause state change
+  // Continuous 8-second loop that never stops. Restarted cleanly on every
+  // index change so the cadence stays consistent across mobile and desktop.
   useEffect(() => {
-    if (paused) return;
     const timer = window.setTimeout(() => {
       go(index + 1);
     }, DURATION);
     return () => window.clearTimeout(timer);
-  }, [index, paused, go]);
+  }, [index, go]);
 
   // Keyboard navigation for accessibility
   useEffect(() => {
@@ -77,13 +76,6 @@ export function HeroSlideshow() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, go]);
 
-  // Pause when the tab is hidden so the 8-second loop resumes smoothly upon return
-  useEffect(() => {
-    const onVisibility = () => setPaused(document.hidden);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
-
   const active = useMemo(() => SLIDES[index] ?? SLIDES[0]!, [index]);
 
   return (
@@ -92,8 +84,6 @@ export function HeroSlideshow() {
       aria-roledescription="carousel"
       aria-label="CRG Research & Consulting highlights"
       className="relative isolate min-h-[100svh] w-full overflow-hidden select-none"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => {
         touchStartX.current = e.touches[0]?.clientX ?? null;
         touchStartY.current = e.touches[0]?.clientY ?? null;
@@ -179,10 +169,10 @@ export function HeroSlideshow() {
               Our Services
             </a>
             <a
-              href="#sectors"
+              href="#about"
               className="rounded-full border-2 border-primary-foreground/70 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground hover:text-primary sm:px-7"
             >
-              Key Sectors
+              Our History
             </a>
           </div>
         </div>
@@ -208,15 +198,6 @@ export function HeroSlideshow() {
 
       {/* Progress indicators - Responsive & Smooth across mobile & desktop */}
       <div className="absolute bottom-6 left-1/2 z-20 flex w-[min(90%,28rem)] -translate-x-1/2 items-center gap-2.5 sm:bottom-8 sm:gap-3">
-        <button
-          type="button"
-          aria-label={paused ? "Resume slideshow autoplay" : "Pause slideshow autoplay"}
-          onClick={() => setPaused((p) => !p)}
-          className="grid size-7 shrink-0 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground/85 backdrop-blur-sm transition-all hover:bg-primary-foreground/20 hover:text-primary-foreground"
-        >
-          {paused ? <Play className="ml-0.5 size-3.5 fill-current" /> : <Pause className="size-3.5 fill-current" />}
-        </button>
-
         <div className="flex flex-1 items-center gap-2 sm:gap-2.5">
           {SLIDES.map((slide, i) => (
             <button
@@ -228,11 +209,10 @@ export function HeroSlideshow() {
               className="group h-1.5 flex-1 overflow-hidden rounded-full bg-primary-foreground/30 touch-manipulation transition-opacity hover:opacity-80"
             >
               <span
-                key={`${i}-${index}-${paused}`}
+                key={`${i}-${index}`}
                 className={cn(
                   "block h-full origin-left rounded-full bg-accent will-change-transform",
-                  i === index && !paused && "animate-bar",
-                  i === index && paused && "scale-x-100",
+                  i === index && "animate-bar",
                   i !== index && "scale-x-0",
                 )}
                 style={{ animationDuration: `${DURATION}ms` }}

@@ -1,0 +1,27 @@
+# Netlify configuration for the CRG Research & Consulting application (TanStack Start + Nitro SSR)
+
+[build]
+  # Build the app with the Netlify Nitro preset so it emits the static site
+  # (.output/public) plus a serverless function (.output/server).
+  command = "NITRO_PRESET=netlify npm run build"
+  publish = ".output/public"
+
+[functions]
+  directory = ".output/server"
+  node_bundler = "esbuild"
+
+# Security headers for the site
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Serve every route (SPA/SSR navigation, deep links, admin pages) through the
+# Nitro serverless function.
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200

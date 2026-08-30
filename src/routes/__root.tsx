@@ -85,6 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Cross-sector research and strategic consulting for governments, organisations and communities.",
       },
       { name: "author", content: "CRG Research & Consulting" },
+      { property: "og:site_name", content: "CRG Research & Consulting" },
       { property: "og:title", content: "CRG Research & Consulting" },
       {
         property: "og:description",
@@ -92,7 +93,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Cross-sector research and strategic consulting for governments, organisations and communities.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "en_US" },
+      { property: "og:url", content: "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/" },
+      {
+        property: "og:image",
+        content:
+          "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg",
+      },
+      { property: "og:image:alt", content: "CRG Research & Consulting Advisory & Fieldwork" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "CRG Research & Consulting" },
+      {
+        name: "twitter:description",
+        content:
+          "Cross-sector research and strategic consulting for governments, organisations and communities.",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/__l5e/assets-v1/ceb36f8a-ed5a-4da9-aea4-0f760a3187bb/image-8.jpeg",
+      },
+      { name: "twitter:image:alt", content: "CRG Research & Consulting Advisory & Fieldwork" },
     ],
     links: [
       {
@@ -100,6 +123,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "canonical", href: "https://project--5fd7f216-12aa-4acc-b20a-77575761998a.lovable.app/" },
     ],
   }),
   shellComponent: RootShell,
