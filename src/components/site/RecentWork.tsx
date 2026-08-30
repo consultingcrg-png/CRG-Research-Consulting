@@ -39,9 +39,6 @@ export function RecentWork() {
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-bold tracking-[0.2em] text-accent">RECENT WORK</span>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Project Updates</h2>
-          <p className="mt-3 text-muted-foreground">
-            A look at recently completed assignments, field research and advisory engagements.
-          </p>
         </Reveal>
 
         {isLoading ? (

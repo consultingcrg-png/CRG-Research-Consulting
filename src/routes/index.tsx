@@ -282,9 +282,6 @@ function Index() {
                 WHAT WE DO
               </span>
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Our Services</h2>
-              <p className="mt-3 text-muted-foreground">
-                Delivering tailored, evidence-led consulting and analytical services that drive sustainable development and high-impact policy decisions.
-              </p>
             </Reveal>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -315,10 +312,6 @@ function Index() {
                 OUR SPECIALTIES
               </span>
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Key Operating Sectors</h2>
-              <p className="mt-3 text-muted-foreground">
-                Cross-sector research and consulting for governments, organizations, and
-                communities.
-              </p>
             </Reveal>
 
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -383,9 +376,6 @@ function Index() {
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <Reveal className="mx-auto max-w-2xl">
               <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Partners</h2>
-              <p className="mt-3 text-muted-foreground">
-                With strategic partner companies across key regional growth centers.
-              </p>
             </Reveal>
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">

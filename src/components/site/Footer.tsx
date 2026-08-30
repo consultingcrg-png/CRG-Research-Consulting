@@ -15,16 +15,13 @@ export function Footer() {
               className="h-11 w-auto object-contain"
             />
           </a>
-          <p className="mt-4 max-w-sm text-sm text-sidebar-foreground/80">
-            Cross-sector research and consulting for governments, organisations and communities.
-          </p>
         </div>
 
         <div>
           <h4 className="text-sm font-bold tracking-wide text-sidebar-foreground">Head Office</h4>
           <p className="mt-4 flex items-start gap-3 text-sm text-sidebar-foreground/80">
             <MapPin className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />
-            6 Luther Street, The Village, Eros Windhoek, Namibia
+            6 Luther Street
           </p>
           <p className="mt-3 flex items-center gap-3 text-sm text-sidebar-foreground/80">
             <Phone className="size-4 shrink-0 text-sidebar-primary" />
