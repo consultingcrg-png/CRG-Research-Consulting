@@ -127,7 +127,7 @@ type AdminInvitation = {
   email: string;
   full_name: string | null;
   invited_by: string | null;
-  status: "pending" | "accepted" | "revoked" | "expired";
+  status: "pending" | "accepted" | "suspended" | "revoked" | "expired";
   notes: string | null;
   expires_at: string;
   created_at: string;
@@ -2628,18 +2628,27 @@ function EmployeeEmailsPanel() {
 function AdminsPanel() {
   const qc = useQueryClient();
 
-  /* ---------- Invitation Form State ---------- */
+  /* ---------- Creation Form State ---------- */
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  /* ---------- Edit Admin State ---------- */
+  const [editingAdmin, setEditingAdmin] = useState<AdminInvitation | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  /* ---------- Delete / Revoke State ---------- */
+  const [deleteAdminId, setDeleteAdminId] = useState<string | null>(null);
+  const [revokeId, setRevokeId] = useState<string | null>(null);
+
   /* ---------- Filter / Search State ---------- */
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-
-  /* ---------- Revoke confirm ---------- */
-  const [revokeId, setRevokeId] = useState<string | null>(null);
 
   /* ---------- Fetch current user (to record invited_by) ---------- */
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -2649,7 +2658,7 @@ function AdminsPanel() {
     });
   }, []);
 
-  /* ---------- Query: all invitations ---------- */
+  /* ---------- Query: all invitations / admins ---------- */
   const { data: invitations = [], isLoading, refetch } = useQuery({
     queryKey: ["admin", "invitations"],
     queryFn: async (): Promise<AdminInvitation[]> => {
@@ -2751,7 +2760,142 @@ function AdminsPanel() {
     },
   });
 
-  /* ---------- Mutation: revoke invitation ---------- */
+  /* ---------- Mutation: edit administrator details ---------- */
+  const editAdminMutation = useMutation({
+    mutationFn: async (e: FormEvent) => {
+      e.preventDefault();
+      if (!editingAdmin) return;
+      setSavingEdit(true);
+
+      const trimmedFirst = editFirstName.trim();
+      const trimmedLast = editLastName.trim();
+      const trimmedEmail = editEmail.trim().toLowerCase();
+      const fullName = `${trimmedFirst} ${trimmedLast}`.trim() || null;
+      const notes = editNotes.trim() || null;
+
+      if (!trimmedEmail) throw new Error("Email address is required.");
+
+      // 1. Update admin_invitations record
+      const { error: invError } = await supabase
+        .from("admin_invitations")
+        .update({
+          email: trimmedEmail,
+          full_name: fullName,
+          notes,
+        })
+        .eq("id", editingAdmin.id);
+
+      if (invError) throw invError;
+
+      // 2. Update profiles table if matching email
+      const { error: profError } = await supabase
+        .from("profiles")
+        .update({
+          email: trimmedEmail,
+          first_name: trimmedFirst || null,
+          last_name: trimmedLast || null,
+          full_name: fullName,
+        })
+        .eq("email", editingAdmin.email);
+
+      if (profError) console.warn("Profile update note:", profError.message);
+    },
+    onSuccess: () => {
+      toast.success("Administrator details updated successfully.");
+      setEditingAdmin(null);
+      setSavingEdit(false);
+      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+    },
+    onError: (err: Error) => {
+      setSavingEdit(false);
+      toast.error(`Failed to update admin: ${err.message}`);
+    },
+  });
+
+  /* ---------- Mutation: toggle suspend / reactivate admin ---------- */
+  const toggleAdminSuspendMutation = useMutation({
+    mutationFn: async (item: AdminInvitation) => {
+      const isCurrentlyActive = item.status === "accepted";
+      const nextStatus: AdminInvitation["status"] = isCurrentlyActive ? "suspended" : "accepted";
+
+      // 1. Update status in admin_invitations
+      const { error: invError } = await supabase
+        .from("admin_invitations")
+        .update({ status: nextStatus })
+        .eq("id", item.id);
+
+      if (invError) throw invError;
+
+      // 2. Lookup user id in profiles to manage user_roles access
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", item.email)
+        .maybeSingle();
+
+      if (profileData?.id) {
+        if (nextStatus === "suspended") {
+          // Remove role from user_roles so admin permissions are paused
+          await supabase
+            .from("user_roles")
+            .delete()
+            .eq("user_id", profileData.id)
+            .eq("role", "admin");
+        } else {
+          // Restore admin role
+          await supabase
+            .from("user_roles")
+            .upsert({ user_id: profileData.id, role: "admin" }, { onConflict: "user_id,role" });
+        }
+      }
+    },
+    onSuccess: (_, item) => {
+      const isSuspended = item.status === "accepted";
+      if (isSuspended) {
+        toast.success(`Administrator "${item.full_name ?? item.email}" has been suspended. Portal access paused.`);
+      } else {
+        toast.success(`Administrator "${item.full_name ?? item.email}" has been reactivated with full access.`);
+      }
+      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to update status: ${err.message}`);
+    },
+  });
+
+  /* ---------- Mutation: delete admin ---------- */
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const target = invitations.find((i) => i.id === id);
+
+      // 1. Delete from admin_invitations
+      const { error } = await supabase.from("admin_invitations").delete().eq("id", id);
+      if (error) throw error;
+
+      // 2. Remove role if profile exists
+      if (target?.email) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", target.email)
+          .maybeSingle();
+
+        if (prof?.id) {
+          await supabase.from("user_roles").delete().eq("user_id", prof.id).eq("role", "admin");
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success("Administrator record removed successfully.");
+      setDeleteAdminId(null);
+      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete admin: ${err.message}`);
+    },
+  });
+
+  /* ---------- Mutation: revoke pending invitation ---------- */
   const revokeInvite = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -2770,6 +2914,22 @@ function AdminsPanel() {
     },
   });
 
+  /* ---------- Open Edit Admin Dialog ---------- */
+  const openEditAdminDialog = (inv: AdminInvitation) => {
+    setEditingAdmin(inv);
+    const fullName = inv.full_name ?? "";
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      setEditFirstName(parts[0] || "");
+      setEditLastName(parts.slice(1).join(" ") || "");
+    } else {
+      setEditFirstName(parts[0] || "");
+      setEditLastName("");
+    }
+    setEditEmail(inv.email);
+    setEditNotes(inv.notes ?? "");
+  };
+
   /* ---------- Filter logic ---------- */
   const filtered = useMemo(() => {
     return invitations.filter((inv) => {
@@ -2778,7 +2938,8 @@ function AdminsPanel() {
       const matchSearch =
         !q ||
         inv.email.toLowerCase().includes(q) ||
-        (inv.full_name ?? "").toLowerCase().includes(q);
+        (inv.full_name ?? "").toLowerCase().includes(q) ||
+        (inv.notes ?? "").toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
   }, [invitations, statusFilter, searchQuery]);
@@ -2786,9 +2947,10 @@ function AdminsPanel() {
   /* ---------- Stats ---------- */
   const counts = useMemo(
     () => ({
+      active: invitations.filter((i) => i.status === "accepted").length,
+      suspended: invitations.filter((i) => i.status === "suspended").length,
       pending: invitations.filter((i) => i.status === "pending").length,
-      accepted: invitations.filter((i) => i.status === "accepted").length,
-      revoked: invitations.filter((i) => i.status === "revoked").length,
+      total: invitations.length,
     }),
     [invitations]
   );
@@ -2806,6 +2968,12 @@ function AdminsPanel() {
         label: "Active Admin",
         className: "bg-emerald-100 text-emerald-800 border-emerald-300",
         iconClass: "check",
+      },
+      suspended: {
+        label: "Suspended",
+        className: "bg-orange-100 text-orange-800 border-orange-300",
+        iconClass: "ban",
+        BanIcon: true,
       },
       revoked: {
         label: "Revoked",
@@ -2859,7 +3027,7 @@ function AdminsPanel() {
             Manage Administrators
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Create new administrator accounts with credentials and manage administrator access.
+            Add new administrators, update details, suspend/reactivate access, or remove administrator accounts.
           </p>
         </div>
         <Button
@@ -2879,17 +3047,21 @@ function AdminsPanel() {
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-emerald-600">{counts.accepted}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="rounded-xl border-2 border-emerald-500/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-emerald-600">{counts.active}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Active Admins</p>
         </div>
-        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+        <div className="rounded-xl border-2 border-orange-500/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-orange-600">{counts.suspended}</p>
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">Suspended</p>
+        </div>
+        <div className="rounded-xl border-2 border-amber-500/20 bg-card p-4 text-center shadow-card">
           <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pending</p>
         </div>
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-primary">{invitations.length}</p>
+          <p className="text-2xl font-bold text-primary">{counts.total}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Total Records</p>
         </div>
       </div>
@@ -3059,7 +3231,7 @@ function AdminsPanel() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email, department..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 pl-9 pr-8"
@@ -3088,6 +3260,7 @@ function AdminsPanel() {
               >
                 <option value="ALL">All</option>
                 <option value="accepted">Active Admin</option>
+                <option value="suspended">Suspended</option>
                 <option value="pending">Pending</option>
                 <option value="revoked">Revoked</option>
                 <option value="expired">Expired</option>
@@ -3130,15 +3303,26 @@ function AdminsPanel() {
           {filtered.map((inv) => {
             const expired = isExpired(inv);
             const effectiveStatus = expired ? "expired" : inv.status;
+            const isSuspended = inv.status === "suspended";
+            const isActive = inv.status === "accepted";
+
             return (
               <li
                 key={inv.id}
-                className="flex flex-col gap-3 rounded-xl border-2 border-primary/30 bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+                className={`flex flex-col gap-3 rounded-xl border-2 bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between ${
+                  isSuspended ? "border-orange-400/50 bg-orange-50/20" : "border-primary/30"
+                }`}
               >
                 {/* Left: avatar + info */}
                 <div className="flex items-start gap-4 min-w-0 flex-1">
                   {/* Avatar circle */}
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-base uppercase select-none">
+                  <div
+                    className={`flex size-11 shrink-0 items-center justify-center rounded-full font-bold text-base uppercase select-none ${
+                      isSuspended
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-primary/10 text-primary"
+                    }`}
+                  >
                     {(inv.full_name ?? inv.email)[0]}
                   </div>
 
@@ -3171,25 +3355,70 @@ function AdminsPanel() {
                   </div>
                 </div>
 
-                {/* Right: action buttons */}
-                <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                  {(inv.status === "pending" && !expired) && (
+                {/* Right: action buttons (Suspend, Reactivate, Edit, Delete) */}
+                <div className="flex flex-wrap shrink-0 items-center gap-2 self-end sm:self-center">
+                  {/* Suspend / Reactivate action */}
+                  {isActive && (
                     <Button
                       size="sm"
-                      variant="destructive"
-                      className="gap-1.5 text-xs"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs text-orange-700 border-orange-300 hover:bg-orange-50 hover:text-orange-800"
+                      onClick={() => toggleAdminSuspendMutation.mutate(inv)}
+                      disabled={toggleAdminSuspendMutation.isPending}
+                      title="Suspend administrator access"
+                    >
+                      <Ban className="size-3.5" />
+                      Suspend
+                    </Button>
+                  )}
+
+                  {isSuspended && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800"
+                      onClick={() => toggleAdminSuspendMutation.mutate(inv)}
+                      disabled={toggleAdminSuspendMutation.isPending}
+                      title="Reactivate administrator access"
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      Reactivate
+                    </Button>
+                  )}
+
+                  {inv.status === "pending" && !expired && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs text-destructive border-destructive/30"
                       onClick={() => setRevokeId(inv.id)}
                     >
                       <Ban className="size-3.5" />
                       Revoke
                     </Button>
                   )}
-                  {(inv.status === "accepted") && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                      <CheckCircle2 className="size-3" />
-                      Active Admin
-                    </span>
-                  )}
+
+                  {/* Edit Admin Details */}
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="size-8"
+                    onClick={() => openEditAdminDialog(inv)}
+                    title="Edit administrator details"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+
+                  {/* Delete Admin */}
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="size-8"
+                    onClick={() => setDeleteAdminId(inv.id)}
+                    title="Delete administrator"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
                 </div>
               </li>
             );
@@ -3197,11 +3426,112 @@ function AdminsPanel() {
         </ul>
       )}
 
+      {/* ── Edit Admin Dialog ── */}
+      <AlertDialog open={editingAdmin !== null} onOpenChange={(open) => !open && setEditingAdmin(null)}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                <Pencil className="size-5" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-base font-bold text-foreground">
+                  Edit Administrator Details
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-xs">
+                  Update personal details, email, or department note.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <form onSubmit={editAdminMutation.mutate} className="space-y-4 py-2 text-xs">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit_first_name" className="text-xs font-semibold">
+                  First Name
+                </Label>
+                <Input
+                  id="edit_first_name"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="e.g. Thabo"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="edit_last_name" className="text-xs font-semibold">
+                  Second / Last Name
+                </Label>
+                <Input
+                  id="edit_last_name"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="e.g. Nkosi"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit_email" className="text-xs font-semibold">
+                Email Address
+              </Label>
+              <Input
+                id="edit_email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="admin@crgresearch.co.za"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit_notes" className="text-xs font-semibold">
+                Notes / Department
+              </Label>
+              <Textarea
+                id="edit_notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={2}
+                placeholder="e.g. Lead Research Director — full admin access"
+              />
+            </div>
+
+            <AlertDialogFooter className="pt-2">
+              <AlertDialogCancel
+                type="button"
+                onClick={() => setEditingAdmin(null)}
+                disabled={savingEdit}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <Button type="submit" disabled={savingEdit} className="gap-1.5">
+                <Save className="size-4" />
+                {savingEdit ? "Saving..." : "Save Changes"}
+              </Button>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete Admin Confirm Dialog ── */}
+      <ConfirmDialog
+        open={deleteAdminId !== null}
+        title="Delete this administrator?"
+        description="This will permanently delete the administrator account and revoke all their permissions. This action cannot be undone."
+        onCancel={() => setDeleteAdminId(null)}
+        onConfirm={() => deleteAdminId && deleteAdminMutation.mutate(deleteAdminId)}
+      />
+
       {/* ── Revoke Confirm Dialog ── */}
       <ConfirmDialog
         open={revokeId !== null}
         title="Revoke this invitation?"
-        description="The administrator access or link will be revoked. You can add them again at any time."
+        description="The administrator access or magic link will be revoked. You can add them again at any time."
         onCancel={() => setRevokeId(null)}
         onConfirm={() => revokeId && revokeInvite.mutate(revokeId)}
       />
