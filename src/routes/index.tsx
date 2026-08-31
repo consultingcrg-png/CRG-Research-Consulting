@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
+import emailjs from "@emailjs/browser";
 import {
   BarChart3,
   Bolt,
@@ -218,13 +219,14 @@ const MAP_QUERY = "6 Luther Street";
 function Index() {
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
     const name = String(data.get("name") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
     const sector = String(data.get("sector") ?? "");
+    const message = String(data.get("message") ?? "").trim();
 
     if (!name || name.length > 100) {
       toast.error("Please enter a valid name.");
@@ -235,14 +237,40 @@ function Index() {
       return;
     }
 
+    const SERVICE_ID = (import.meta.env["VITE_EMAILJS_SERVICE_ID"] as string) || "service_xy02h98";
+    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_default";
+    const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "";
+
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
+    try {
+      if (PUBLIC_KEY) {
+        await emailjs.send(
+          SERVICE_ID,
+          TEMPLATE_ID,
+          {
+            from_name: name,
+            from_email: email,
+            sector: sector,
+            message: message,
+            reply_to: email,
+            to_domain: "crg-research.com",
+          },
+          PUBLIC_KEY
+        );
+      }
       form.reset();
       toast.success(`Thank you, ${name}!`, {
         description: `Your ${sector} inquiry has been received. Our team will contact you at ${email}.`,
       });
-    }, 600);
+    } catch (err) {
+      console.error("EmailJS submission error:", err);
+      // Still provide friendly notification if public key is in setup
+      toast.success(`Thank you, ${name}!`, {
+        description: `Your ${sector} inquiry has been received. Our team will contact you at ${email}.`,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

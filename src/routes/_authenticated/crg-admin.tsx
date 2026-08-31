@@ -2206,17 +2206,17 @@ function EmployeeEmailsPanel() {
                 <span className="text-muted-foreground">Quick Domain:</span>
                 <button
                   type="button"
-                  onClick={() => applyDomainSuffix("@crg-research.co.za")}
-                  className="rounded bg-muted px-1.5 py-0.5 font-mono text-accent hover:bg-accent/15 transition-colors"
+                  onClick={() => applyDomainSuffix("@crg-research.com")}
+                  className="rounded bg-accent/15 px-2 py-0.5 font-mono text-accent font-semibold hover:bg-accent/25 transition-colors"
                 >
-                  + @crg-research.co.za
+                  + @crg-research.com
                 </button>
                 <button
                   type="button"
-                  onClick={() => applyDomainSuffix("@crg-research.com")}
-                  className="rounded bg-muted px-1.5 py-0.5 font-mono text-accent hover:bg-accent/15 transition-colors"
+                  onClick={() => applyDomainSuffix("@crg-research.co.za")}
+                  className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground hover:bg-accent/15 hover:text-accent transition-colors"
                 >
-                  + @crg-research.com
+                  + @crg-research.co.za
                 </button>
               </div>
             </div>
