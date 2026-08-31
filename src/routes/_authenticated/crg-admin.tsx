@@ -38,6 +38,9 @@ import {
   Check,
   Globe,
   Inbox,
+  UserCheck,
+  UserX,
+  UserMinus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,6 +190,7 @@ function AdminPortal() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -200,6 +204,19 @@ function AdminPortal() {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError || !userData?.user) {
           setIsAdmin(false);
+          return;
+        }
+
+        // Check if admin is suspended in admin_invitations
+        const { data: invData } = await supabase
+          .from("admin_invitations")
+          .select("status")
+          .eq("email", userData.user.email ?? "")
+          .maybeSingle();
+
+        if (invData?.status === "suspended") {
+          setIsAdmin(false);
+          setIsSuspended(true);
           return;
         }
 
@@ -254,9 +271,13 @@ function AdminPortal() {
       <div className="flex min-h-screen items-center justify-center bg-surface px-5">
         <div className="max-w-sm rounded-2xl border-2 border-primary bg-card p-8 text-center shadow-card">
           <ShieldAlert className="mx-auto size-8 text-destructive" />
-          <h1 className="mt-4 text-lg font-bold">Not authorised</h1>
+          <h1 className="mt-4 text-lg font-bold">
+            {isSuspended ? "Account Suspended" : "Not authorised"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This account does not have administrator access.
+            {isSuspended
+              ? "Your administrator account has been suspended by an administrator. Please contact your organization director."
+              : "This account does not have administrator access."}
           </p>
           <Button className="mt-6" onClick={signOut}>
             Sign out
@@ -2628,33 +2649,33 @@ function EmployeeEmailsPanel() {
 function AdminsPanel() {
   const qc = useQueryClient();
 
-  /* ---------- Creation Form State ---------- */
+  /* ---------- Admin Form State ---------- */
   const [showForm, setShowForm] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<AdminInvitation | null>(null);
   const [sending, setSending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  /* ---------- Edit Admin State ---------- */
-  const [editingAdmin, setEditingAdmin] = useState<AdminInvitation | null>(null);
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  /* ---------- Delete / Revoke State ---------- */
-  const [deleteAdminId, setDeleteAdminId] = useState<string | null>(null);
-  const [revokeId, setRevokeId] = useState<string | null>(null);
+  // Form field state for editing/adding
+  const [formFirstName, setFormFirstName] = useState("");
+  const [formLastName, setFormLastName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formNotes, setFormNotes] = useState("");
 
   /* ---------- Filter / Search State ---------- */
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  /* ---------- Fetch current user (to record invited_by) ---------- */
+  /* ---------- Delete / Revoke dialogs ---------- */
+  const [deleteAdmin, setDeleteAdmin] = useState<AdminInvitation | null>(null);
+
+  /* ---------- Fetch current user (for authorization and safety checks) ---------- */
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
+      setCurrentUserEmail(data.user?.email ?? null);
     });
   }, []);
 
@@ -2671,22 +2692,78 @@ function AdminsPanel() {
     },
   });
 
-  /* ---------- Mutation: create admin with credentials ---------- */
-  const createAdminMutation = useMutation({
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+
+  /* ---------- Open Create / Edit Forms ---------- */
+  const openCreateForm = () => {
+    setEditingAdmin(null);
+    setFormFirstName("");
+    setFormLastName("");
+    setFormEmail("");
+    setFormNotes("");
+    setShowForm(true);
+  };
+
+  const openEditForm = (item: AdminInvitation) => {
+    setEditingAdmin(item);
+    const parts = (item.full_name ?? "").trim().split(" ");
+    setFormFirstName(parts[0] || "");
+    setFormLastName(parts.slice(1).join(" ") || "");
+    setFormEmail(item.email);
+    setFormNotes(item.notes ?? "");
+    setShowForm(true);
+  };
+
+  /* ---------- Mutation: Save Admin (Create or Edit) ---------- */
+  const saveAdminMutation = useMutation({
     mutationFn: async (fd: FormData) => {
       const firstName = (fd.get("first_name") as string).trim();
       const lastName = (fd.get("last_name") as string).trim();
+      const notes = (fd.get("notes") as string).trim() || null;
+      const fullName = `${firstName} ${lastName}`.trim() || null;
+
+      // ─── EDIT MODE ───
+      if (editingAdmin) {
+        // 1. Update admin_invitations
+        const { error: updateInvError } = await supabase
+          .from("admin_invitations")
+          .update({
+            full_name: fullName,
+            notes,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingAdmin.id);
+
+        if (updateInvError) throw updateInvError;
+
+        // 2. Update profiles table for matching email
+        const { error: profError } = await supabase
+          .from("profiles")
+          .update({
+            first_name: firstName || null,
+            last_name: lastName || null,
+            full_name: fullName,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("email", editingAdmin.email);
+
+        if (profError) {
+          console.warn("Profile update note:", profError.message);
+        }
+
+        return { mode: "edit" as const };
+      }
+
+      // ─── CREATE MODE ───
       const email = (fd.get("email") as string).trim().toLowerCase();
       const password = (fd.get("password") as string);
       const confirmPassword = (fd.get("confirm_password") as string);
-      const notes = (fd.get("notes") as string).trim() || null;
 
       if (!email) throw new Error("Email address is required.");
       if (!password) throw new Error("Password is required.");
       if (password.length < 6) throw new Error("Password must be at least 6 characters.");
       if (password !== confirmPassword) throw new Error("Passwords do not match.");
 
-      const fullName = `${firstName} ${lastName}`.trim() || null;
       const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
       // 1. Create client instance with persistSession: false to preserve current session
@@ -2749,186 +2826,134 @@ function AdminsPanel() {
         );
         if (profError) console.warn("Profile sync note:", profError.message);
       }
+
+      return { mode: "create" as const };
     },
-    onSuccess: () => {
-      toast.success("New administrator account created successfully!");
+    onSuccess: (res) => {
+      toast.success(
+        res.mode === "edit"
+          ? "Administrator details updated successfully!"
+          : "New administrator account created successfully!"
+      );
       setShowForm(false);
-      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Failed to create admin: ${err.message}`);
-    },
-  });
-
-  /* ---------- Mutation: edit administrator details ---------- */
-  const editAdminMutation = useMutation({
-    mutationFn: async (e: FormEvent) => {
-      e.preventDefault();
-      if (!editingAdmin) return;
-      setSavingEdit(true);
-
-      const trimmedFirst = editFirstName.trim();
-      const trimmedLast = editLastName.trim();
-      const trimmedEmail = editEmail.trim().toLowerCase();
-      const fullName = `${trimmedFirst} ${trimmedLast}`.trim() || null;
-      const notes = editNotes.trim() || null;
-
-      if (!trimmedEmail) throw new Error("Email address is required.");
-
-      // 1. Update admin_invitations record
-      const { error: invError } = await supabase
-        .from("admin_invitations")
-        .update({
-          email: trimmedEmail,
-          full_name: fullName,
-          notes,
-        })
-        .eq("id", editingAdmin.id);
-
-      if (invError) throw invError;
-
-      // 2. Update profiles table if matching email
-      const { error: profError } = await supabase
-        .from("profiles")
-        .update({
-          email: trimmedEmail,
-          first_name: trimmedFirst || null,
-          last_name: trimmedLast || null,
-          full_name: fullName,
-        })
-        .eq("email", editingAdmin.email);
-
-      if (profError) console.warn("Profile update note:", profError.message);
-    },
-    onSuccess: () => {
-      toast.success("Administrator details updated successfully.");
       setEditingAdmin(null);
-      setSavingEdit(false);
-      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+      void invalidate();
     },
     onError: (err: Error) => {
-      setSavingEdit(false);
-      toast.error(`Failed to update admin: ${err.message}`);
+      toast.error(`Operation failed: ${err.message}`);
     },
   });
 
-  /* ---------- Mutation: toggle suspend / reactivate admin ---------- */
-  const toggleAdminSuspendMutation = useMutation({
+  /* ---------- Mutation: Suspend / Reactivate Admin ---------- */
+  const toggleSuspendMutation = useMutation({
     mutationFn: async (item: AdminInvitation) => {
-      const isCurrentlyActive = item.status === "accepted";
-      const nextStatus: AdminInvitation["status"] = isCurrentlyActive ? "suspended" : "accepted";
+      if (currentUserEmail && item.email.toLowerCase() === currentUserEmail.toLowerCase()) {
+        throw new Error("You cannot suspend your own active administrator account.");
+      }
+
+      const nextStatus = item.status === "suspended" ? "accepted" : "suspended";
 
       // 1. Update status in admin_invitations
       const { error: invError } = await supabase
         .from("admin_invitations")
-        .update({ status: nextStatus })
+        .update({
+          status: nextStatus,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", item.id);
 
       if (invError) throw invError;
 
-      // 2. Lookup user id in profiles to manage user_roles access
-      const { data: profileData } = await supabase
+      // 2. Sync user_roles: if suspended, revoke admin role; if reactivated, restore admin role
+      if (nextStatus === "suspended") {
+        // Remove or update role in user_roles for matching user
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", item.email)
+          .maybeSingle();
+
+        if (prof?.id) {
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .delete()
+            .eq("user_id", prof.id)
+            .eq("role", "admin");
+          if (roleError) console.warn("user_roles revoke note:", roleError.message);
+        }
+      } else if (nextStatus === "accepted") {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", item.email)
+          .maybeSingle();
+
+        if (prof?.id) {
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .upsert(
+              { user_id: prof.id, role: "admin" },
+              { onConflict: "user_id,role" }
+            );
+          if (roleError) console.warn("user_roles restore note:", roleError.message);
+        }
+      }
+
+      return { nextStatus, name: item.full_name || item.email };
+    },
+    onSuccess: ({ nextStatus, name }) => {
+      toast.success(
+        nextStatus === "suspended"
+          ? `Administrator ${name} has been suspended.`
+          : `Administrator ${name} has been reactivated.`
+      );
+      void invalidate();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  /* ---------- Mutation: Delete Admin ---------- */
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (item: AdminInvitation) => {
+      if (currentUserEmail && item.email.toLowerCase() === currentUserEmail.toLowerCase()) {
+        throw new Error("You cannot delete your own active administrator account.");
+      }
+
+      // 1. Delete from admin_invitations
+      const { error: delError } = await supabase
+        .from("admin_invitations")
+        .delete()
+        .eq("id", item.id);
+
+      if (delError) throw delError;
+
+      // 2. Remove role from user_roles
+      const { data: prof } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", item.email)
         .maybeSingle();
 
-      if (profileData?.id) {
-        if (nextStatus === "suspended") {
-          // Remove role from user_roles so admin permissions are paused
-          await supabase
-            .from("user_roles")
-            .delete()
-            .eq("user_id", profileData.id)
-            .eq("role", "admin");
-        } else {
-          // Restore admin role
-          await supabase
-            .from("user_roles")
-            .upsert({ user_id: profileData.id, role: "admin" }, { onConflict: "user_id,role" });
-        }
-      }
-    },
-    onSuccess: (_, item) => {
-      const isSuspended = item.status === "accepted";
-      if (isSuspended) {
-        toast.success(`Administrator "${item.full_name ?? item.email}" has been suspended. Portal access paused.`);
-      } else {
-        toast.success(`Administrator "${item.full_name ?? item.email}" has been reactivated with full access.`);
-      }
-      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Failed to update status: ${err.message}`);
-    },
-  });
-
-  /* ---------- Mutation: delete admin ---------- */
-  const deleteAdminMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const target = invitations.find((i) => i.id === id);
-
-      // 1. Delete from admin_invitations
-      const { error } = await supabase.from("admin_invitations").delete().eq("id", id);
-      if (error) throw error;
-
-      // 2. Remove role if profile exists
-      if (target?.email) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", target.email)
-          .maybeSingle();
-
-        if (prof?.id) {
-          await supabase.from("user_roles").delete().eq("user_id", prof.id).eq("role", "admin");
-        }
+      if (prof?.id) {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", prof.id)
+          .eq("role", "admin");
+        if (roleError) console.warn("Role delete note:", roleError.message);
       }
     },
     onSuccess: () => {
-      toast.success("Administrator record removed successfully.");
-      setDeleteAdminId(null);
-      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
+      toast.success("Administrator record and privileges removed.");
+      setDeleteAdmin(null);
+      void invalidate();
     },
     onError: (err: Error) => {
-      toast.error(`Failed to delete admin: ${err.message}`);
+      toast.error(`Failed to delete administrator: ${err.message}`);
     },
   });
-
-  /* ---------- Mutation: revoke pending invitation ---------- */
-  const revokeInvite = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("admin_invitations")
-        .update({ status: "revoked" })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Invitation revoked.");
-      setRevokeId(null);
-      void qc.invalidateQueries({ queryKey: ["admin", "invitations"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Failed to revoke: ${err.message}`);
-    },
-  });
-
-  /* ---------- Open Edit Admin Dialog ---------- */
-  const openEditAdminDialog = (inv: AdminInvitation) => {
-    setEditingAdmin(inv);
-    const fullName = inv.full_name ?? "";
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      setEditFirstName(parts[0] || "");
-      setEditLastName(parts.slice(1).join(" ") || "");
-    } else {
-      setEditFirstName(parts[0] || "");
-      setEditLastName("");
-    }
-    setEditEmail(inv.email);
-    setEditNotes(inv.notes ?? "");
-  };
 
   /* ---------- Filter logic ---------- */
   const filtered = useMemo(() => {
@@ -2938,8 +2963,7 @@ function AdminsPanel() {
       const matchSearch =
         !q ||
         inv.email.toLowerCase().includes(q) ||
-        (inv.full_name ?? "").toLowerCase().includes(q) ||
-        (inv.notes ?? "").toLowerCase().includes(q);
+        (inv.full_name ?? "").toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
   }, [invitations, statusFilter, searchQuery]);
@@ -2950,20 +2974,15 @@ function AdminsPanel() {
       active: invitations.filter((i) => i.status === "accepted").length,
       suspended: invitations.filter((i) => i.status === "suspended").length,
       pending: invitations.filter((i) => i.status === "pending").length,
-      total: invitations.length,
+      revoked: invitations.filter((i) => i.status === "revoked").length,
     }),
     [invitations]
   );
 
   /* ---------- Helpers ---------- */
   function statusBadge(status: AdminInvitation["status"]) {
-    type BadgeConfig = { label: string; className: string; iconClass: string; BanIcon?: boolean };
+    type BadgeConfig = { label: string; className: string; iconClass: string; isBan?: boolean; isSuspended?: boolean };
     const map: Record<AdminInvitation["status"], BadgeConfig> = {
-      pending: {
-        label: "Pending",
-        className: "bg-amber-100 text-amber-800 border-amber-300",
-        iconClass: "clock",
-      },
       accepted: {
         label: "Active Admin",
         className: "bg-emerald-100 text-emerald-800 border-emerald-300",
@@ -2971,15 +2990,20 @@ function AdminsPanel() {
       },
       suspended: {
         label: "Suspended",
-        className: "bg-orange-100 text-orange-800 border-orange-300",
-        iconClass: "ban",
-        BanIcon: true,
+        className: "bg-amber-100 text-amber-800 border-amber-300",
+        iconClass: "suspended",
+        isSuspended: true,
+      },
+      pending: {
+        label: "Pending",
+        className: "bg-blue-100 text-blue-800 border-blue-300",
+        iconClass: "clock",
       },
       revoked: {
         label: "Revoked",
         className: "bg-red-100 text-red-800 border-red-300",
         iconClass: "ban",
-        BanIcon: true,
+        isBan: true,
       },
       expired: {
         label: "Expired",
@@ -2992,7 +3016,9 @@ function AdminsPanel() {
       <span
         className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${cfg.className}`}
       >
-        {cfg.BanIcon ? (
+        {cfg.isSuspended ? (
+          <UserX className="size-3 text-amber-700" />
+        ) : cfg.isBan ? (
           <Ban className="size-3" />
         ) : cfg.iconClass === "check" ? (
           <CheckCircle2 className="size-3" />
@@ -3027,11 +3053,18 @@ function AdminsPanel() {
             Manage Administrators
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Add new administrators, update details, suspend/reactivate access, or remove administrator accounts.
+            Create, edit, suspend, and remove administrator privileges and accounts.
           </p>
         </div>
         <Button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              setEditingAdmin(null);
+            } else {
+              openCreateForm();
+            }
+          }}
           className="shrink-0 gap-2"
         >
           {showForm ? (
@@ -3048,46 +3081,57 @@ function AdminsPanel() {
 
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border-2 border-emerald-500/20 bg-card p-4 text-center shadow-card">
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
           <p className="text-2xl font-bold text-emerald-600">{counts.active}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Active Admins</p>
         </div>
-        <div className="rounded-xl border-2 border-orange-500/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-orange-600">{counts.suspended}</p>
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-amber-600">{counts.suspended}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Suspended</p>
         </div>
-        <div className="rounded-xl border-2 border-amber-500/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
+        <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
+          <p className="text-2xl font-bold text-blue-600">{counts.pending}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pending</p>
         </div>
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 text-center shadow-card">
-          <p className="text-2xl font-bold text-primary">{counts.total}</p>
+          <p className="text-2xl font-bold text-primary">{invitations.length}</p>
           <p className="mt-0.5 text-xs font-medium text-muted-foreground">Total Records</p>
         </div>
       </div>
 
-      {/* ── Add Admin Form with Password ── */}
+      {/* ── Add / Edit Admin Form ── */}
       {showForm && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
             setSending(true);
             const fd = new FormData(e.currentTarget);
-            createAdminMutation.mutate(fd, { onSettled: () => setSending(false) });
+            saveAdminMutation.mutate(fd, { onSettled: () => setSending(false) });
           }}
           className="animate-fade-up space-y-5 rounded-2xl border-2 border-primary bg-card p-6 shadow-card"
         >
           {/* Form title */}
-          <div className="flex items-center gap-3 border-b border-border pb-4">
-            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
-              <UserPlus className="size-5 text-primary" />
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                {editingAdmin ? <Pencil className="size-5 text-primary" /> : <UserPlus className="size-5 text-primary" />}
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">
+                  {editingAdmin ? `Edit Administrator: ${editingAdmin.full_name || editingAdmin.email}` : "Create New Admin Account"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {editingAdmin
+                    ? "Update administrator names and notes."
+                    : "Enter administrator details and set their initial login credentials."}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-foreground">Create New Admin Account</h3>
-              <p className="text-xs text-muted-foreground">
-                Enter administrator details and set their initial login credentials.
-              </p>
-            </div>
+            {editingAdmin && (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                Editing Mode
+              </Badge>
+            )}
           </div>
 
           {/* Names and Email */}
@@ -3100,6 +3144,8 @@ function AdminsPanel() {
                 id="inv_first_name"
                 name="first_name"
                 required
+                value={formFirstName}
+                onChange={(e) => setFormFirstName(e.target.value)}
                 placeholder="e.g. Thabo"
                 autoComplete="given-name"
               />
@@ -3113,6 +3159,8 @@ function AdminsPanel() {
                 id="inv_last_name"
                 name="last_name"
                 required
+                value={formLastName}
+                onChange={(e) => setFormLastName(e.target.value)}
                 placeholder="e.g. Nkosi"
                 autoComplete="family-name"
               />
@@ -3129,66 +3177,74 @@ function AdminsPanel() {
                   name="email"
                   type="email"
                   required
+                  disabled={editingAdmin !== null}
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="admin@crgresearch.co.za"
                   autoComplete="email"
-                  className="pl-9"
+                  className={`pl-9 ${editingAdmin ? "bg-muted cursor-not-allowed text-muted-foreground" : ""}`}
                 />
               </div>
+              {editingAdmin && (
+                <p className="text-[11px] text-muted-foreground">Admin login email cannot be edited.</p>
+              )}
             </div>
           </div>
 
-          {/* Password Fields */}
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="inv_password" className="font-semibold">
-                Create New Password <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="inv_password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="Minimum 6 characters"
-                  autoComplete="new-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+          {/* Password Fields (Only when creating new admin) */}
+          {!editingAdmin && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="inv_password" className="font-semibold">
+                  Create New Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="inv_password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Minimum 6 characters"
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Must be at least 6 characters long.</p>
               </div>
-              <p className="text-[11px] text-muted-foreground">Must be at least 6 characters long.</p>
-            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="inv_confirm_password" className="font-semibold">
-                Confirm Password <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="inv_confirm_password"
-                  name="confirm_password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  required
-                  placeholder="Re-enter password"
-                  autoComplete="new-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+              <div className="space-y-1.5">
+                <Label htmlFor="inv_confirm_password" className="font-semibold">
+                  Confirm Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="inv_confirm_password"
+                    name="confirm_password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">Ensure both passwords match exactly.</p>
               </div>
-              <p className="text-[11px] text-muted-foreground">Ensure both passwords match exactly.</p>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="inv_notes" className="font-semibold">
@@ -3198,6 +3254,8 @@ function AdminsPanel() {
               id="inv_notes"
               name="notes"
               rows={2}
+              value={formNotes}
+              onChange={(e) => setFormNotes(e.target.value)}
               placeholder="e.g. Lead Research Director — full admin access granted."
             />
             <p className="text-[11px] text-muted-foreground">
@@ -3208,16 +3266,23 @@ function AdminsPanel() {
           <div className="flex gap-3 pt-1">
             <Button
               type="submit"
-              disabled={sending || createAdminMutation.isPending}
+              disabled={sending || saveAdminMutation.isPending}
               className="gap-2"
             >
-              <UserPlus className="size-4" />
-              {sending || createAdminMutation.isPending ? "Creating..." : "Create Admin Account"}
+              <Save className="size-4" />
+              {sending || saveAdminMutation.isPending
+                ? "Saving..."
+                : editingAdmin
+                ? "Save Changes"
+                : "Create Admin Account"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                setEditingAdmin(null);
+              }}
             >
               Cancel
             </Button>
@@ -3225,13 +3290,13 @@ function AdminsPanel() {
         </form>
       )}
 
-      {/* ── Filters ── */}
+      {/* ── Search & Filter Controls ── */}
       {!showForm && (
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name, email, department..."
+              placeholder="Search by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 pl-9 pr-8"
@@ -3258,9 +3323,9 @@ function AdminsPanel() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-2.5 text-xs"
               >
-                <option value="ALL">All</option>
-                <option value="accepted">Active Admin</option>
-                <option value="suspended">Suspended</option>
+                <option value="ALL">All Statuses</option>
+                <option value="accepted">Active Admins</option>
+                <option value="suspended">Suspended Admins</option>
                 <option value="pending">Pending</option>
                 <option value="revoked">Revoked</option>
                 <option value="expired">Expired</option>
@@ -3281,7 +3346,7 @@ function AdminsPanel() {
         </div>
       )}
 
-      {/* ── Invitations / Admins List ── */}
+      {/* ── Administrators List ── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="size-7 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -3303,14 +3368,15 @@ function AdminsPanel() {
           {filtered.map((inv) => {
             const expired = isExpired(inv);
             const effectiveStatus = expired ? "expired" : inv.status;
-            const isSuspended = inv.status === "suspended";
-            const isActive = inv.status === "accepted";
+            const isSelf = Boolean(currentUserEmail && inv.email.toLowerCase() === currentUserEmail.toLowerCase());
 
             return (
               <li
                 key={inv.id}
-                className={`flex flex-col gap-3 rounded-xl border-2 bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between ${
-                  isSuspended ? "border-orange-400/50 bg-orange-50/20" : "border-primary/30"
+                className={`flex flex-col gap-3 rounded-xl border-2 bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between transition-colors ${
+                  inv.status === "suspended"
+                    ? "border-amber-400/50 bg-amber-50/20"
+                    : "border-primary/30"
                 }`}
               >
                 {/* Left: avatar + info */}
@@ -3318,8 +3384,8 @@ function AdminsPanel() {
                   {/* Avatar circle */}
                   <div
                     className={`flex size-11 shrink-0 items-center justify-center rounded-full font-bold text-base uppercase select-none ${
-                      isSuspended
-                        ? "bg-orange-100 text-orange-700"
+                      inv.status === "suspended"
+                        ? "bg-amber-100 text-amber-700"
                         : "bg-primary/10 text-primary"
                     }`}
                   >
@@ -3332,6 +3398,11 @@ function AdminsPanel() {
                         {inv.full_name ?? <span className="italic text-muted-foreground">No name</span>}
                       </span>
                       {statusBadge(effectiveStatus)}
+                      {isSelf && (
+                        <Badge variant="outline" className="text-[10px] border-primary text-primary font-bold">
+                          You (Current Admin)
+                        </Badge>
+                      )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -3355,67 +3426,55 @@ function AdminsPanel() {
                   </div>
                 </div>
 
-                {/* Right: action buttons (Suspend, Reactivate, Edit, Delete) */}
+                {/* Right: action buttons (Edit, Suspend/Reactivate, Delete) */}
                 <div className="flex flex-wrap shrink-0 items-center gap-2 self-end sm:self-center">
-                  {/* Suspend / Reactivate action */}
-                  {isActive && (
+                  {/* Suspend / Reactivate Button */}
+                  {(inv.status === "accepted" || inv.status === "suspended") && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-8 gap-1 text-xs text-orange-700 border-orange-300 hover:bg-orange-50 hover:text-orange-800"
-                      onClick={() => toggleAdminSuspendMutation.mutate(inv)}
-                      disabled={toggleAdminSuspendMutation.isPending}
-                      title="Suspend administrator access"
+                      variant={inv.status === "suspended" ? "outline" : "ghost"}
+                      disabled={isSelf}
+                      className={`h-8 gap-1.5 text-xs ${
+                        inv.status === "suspended"
+                          ? "border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          : "text-amber-700 hover:bg-amber-100/70"
+                      }`}
+                      onClick={() => toggleSuspendMutation.mutate(inv)}
+                      title={isSelf ? "You cannot suspend yourself" : inv.status === "suspended" ? "Reactivate this admin" : "Suspend this admin"}
                     >
-                      <Ban className="size-3.5" />
-                      Suspend
+                      {inv.status === "suspended" ? (
+                        <>
+                          <UserCheck className="size-3.5" />
+                          Reactivate
+                        </>
+                      ) : (
+                        <>
+                          <UserX className="size-3.5" />
+                          Suspend
+                        </>
+                      )}
                     </Button>
                   )}
 
-                  {isSuspended && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800"
-                      onClick={() => toggleAdminSuspendMutation.mutate(inv)}
-                      disabled={toggleAdminSuspendMutation.isPending}
-                      title="Reactivate administrator access"
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      Reactivate
-                    </Button>
-                  )}
-
-                  {inv.status === "pending" && !expired && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1 text-xs text-destructive border-destructive/30"
-                      onClick={() => setRevokeId(inv.id)}
-                    >
-                      <Ban className="size-3.5" />
-                      Revoke
-                    </Button>
-                  )}
-
-                  {/* Edit Admin Details */}
+                  {/* Edit Button */}
                   <Button
                     size="icon"
                     variant="outline"
                     className="size-8"
-                    onClick={() => openEditAdminDialog(inv)}
+                    onClick={() => openEditForm(inv)}
                     title="Edit administrator details"
                   >
                     <Pencil className="size-3.5" />
                   </Button>
 
-                  {/* Delete Admin */}
+                  {/* Delete Button */}
                   <Button
                     size="icon"
                     variant="destructive"
+                    disabled={isSelf}
                     className="size-8"
-                    onClick={() => setDeleteAdminId(inv.id)}
-                    title="Delete administrator"
+                    onClick={() => setDeleteAdmin(inv)}
+                    title={isSelf ? "You cannot delete yourself" : "Delete administrator"}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -3426,114 +3485,17 @@ function AdminsPanel() {
         </ul>
       )}
 
-      {/* ── Edit Admin Dialog ── */}
-      <AlertDialog open={editingAdmin !== null} onOpenChange={(open) => !open && setEditingAdmin(null)}>
-        <AlertDialogContent className="max-w-lg">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
-                <Pencil className="size-5" />
-              </div>
-              <div>
-                <AlertDialogTitle className="text-base font-bold text-foreground">
-                  Edit Administrator Details
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-xs">
-                  Update personal details, email, or department note.
-                </AlertDialogDescription>
-              </div>
-            </div>
-          </AlertDialogHeader>
-
-          <form onSubmit={editAdminMutation.mutate} className="space-y-4 py-2 text-xs">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit_first_name" className="text-xs font-semibold">
-                  First Name
-                </Label>
-                <Input
-                  id="edit_first_name"
-                  value={editFirstName}
-                  onChange={(e) => setEditFirstName(e.target.value)}
-                  placeholder="e.g. Thabo"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="edit_last_name" className="text-xs font-semibold">
-                  Second / Last Name
-                </Label>
-                <Input
-                  id="edit_last_name"
-                  value={editLastName}
-                  onChange={(e) => setEditLastName(e.target.value)}
-                  placeholder="e.g. Nkosi"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit_email" className="text-xs font-semibold">
-                Email Address
-              </Label>
-              <Input
-                id="edit_email"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="admin@crgresearch.co.za"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit_notes" className="text-xs font-semibold">
-                Notes / Department
-              </Label>
-              <Textarea
-                id="edit_notes"
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                rows={2}
-                placeholder="e.g. Lead Research Director — full admin access"
-              />
-            </div>
-
-            <AlertDialogFooter className="pt-2">
-              <AlertDialogCancel
-                type="button"
-                onClick={() => setEditingAdmin(null)}
-                disabled={savingEdit}
-              >
-                Cancel
-              </AlertDialogCancel>
-              <Button type="submit" disabled={savingEdit} className="gap-1.5">
-                <Save className="size-4" />
-                {savingEdit ? "Saving..." : "Save Changes"}
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── Delete Admin Confirm Dialog ── */}
+      {/* ── Delete Confirm Dialog ── */}
       <ConfirmDialog
-        open={deleteAdminId !== null}
+        open={deleteAdmin !== null}
         title="Delete this administrator?"
-        description="This will permanently delete the administrator account and revoke all their permissions. This action cannot be undone."
-        onCancel={() => setDeleteAdminId(null)}
-        onConfirm={() => deleteAdminId && deleteAdminMutation.mutate(deleteAdminId)}
-      />
-
-      {/* ── Revoke Confirm Dialog ── */}
-      <ConfirmDialog
-        open={revokeId !== null}
-        title="Revoke this invitation?"
-        description="The administrator access or magic link will be revoked. You can add them again at any time."
-        onCancel={() => setRevokeId(null)}
-        onConfirm={() => revokeId && revokeInvite.mutate(revokeId)}
+        description={
+          deleteAdmin
+            ? `Are you sure you want to delete ${deleteAdmin.full_name || deleteAdmin.email}? Their administrator access will be permanently revoked.`
+            : "This action cannot be undone."
+        }
+        onCancel={() => setDeleteAdmin(null)}
+        onConfirm={() => deleteAdmin && deleteAdminMutation.mutate(deleteAdmin)}
       />
     </div>
   );
