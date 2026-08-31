@@ -2,3 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /staff-access-crg
 Disallow: /crg-admin
+
+# Preferred domain for Google
+Host: www.crg-research.com
+
+Sitemap: https://www.crg-research.com/sitemap.xml

@@ -51,21 +51,53 @@ export const Route = createFileRoute("/")({
       title: DEFAULT_TITLE,
       description: HOME_DESCRIPTION,
       keywords: KEYWORDS,
+      path: "/",
     });
-    const url = siteUrl() || undefined;
+    const url = siteUrl();
+
+    // ── 1. WebSite schema (enables Google Sitelinks Search Box)
+    const websiteJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${url}#website`,
+      name: SITE_NAME,
+      alternateName: ["CRG Research & Consulting", "CRG Consulting", "CRG Research"],
+      url: url,
+      description: HOME_DESCRIPTION,
+      inLanguage: "en",
+      publisher: { "@id": `${url}#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${url}/?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
+    };
+
+    // ── 2. Organization schema
     const orgJsonLd = {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "@id": url ? `${url}#organization` : undefined,
+      "@id": `${url}#organization`,
       name: SITE_NAME,
+      alternateName: ["CRG Research & Consulting", "CRG Consulting", "CRG Research Namibia"],
+      legalName: "CRG Research & Consulting",
       url: url,
-      logo: absolutize("/crg-logo.png"),
+      logo: {
+        "@type": "ImageObject",
+        url: absolutize("/crg-logo.png"),
+        width: "200",
+        height: "60",
+      },
+      image: absolutize(OG_IMAGE),
+      description: HOME_DESCRIPTION,
       foundingDate: "2021",
+      numberOfEmployees: { "@type": "QuantitativeValue", minValue: 11, maxValue: 50 },
       address: {
         "@type": "PostalAddress",
         streetAddress: SITE_CONTACT.streetAddress,
         addressLocality: SITE_CONTACT.addressLocality,
         addressRegion: SITE_CONTACT.addressRegion,
+        postalCode: "10001",
         addressCountry: SITE_CONTACT.addressCountry,
       },
       geo: {
@@ -73,27 +105,68 @@ export const Route = createFileRoute("/")({
         latitude: SITE_CONTACT.geo.latitude,
         longitude: SITE_CONTACT.geo.longitude,
       },
-      contactPoint: {
-        "@type": "ContactPoint",
-        telephone: SITE_CONTACT.telephone,
-        contactType: "customer service",
-        areaServed: "NA",
-        availableLanguage: ["English"],
-      },
-      sameAs: [SOCIAL_LINKEDIN],
-    };
-    const serviceJsonLd = {
-      "@context": "https://schema.org",
-      "@type": "ProfessionalService",
-      name: SITE_NAME,
-      description: HOME_DESCRIPTION,
-      url: url,
-      image: absolutize(OG_IMAGE),
-      telephone: SITE_CONTACT.telephone,
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          telephone: SITE_CONTACT.telephone,
+          contactType: "customer service",
+          areaServed: ["NA", "KE", "NG"],
+          availableLanguage: ["English"],
+        },
+        {
+          "@type": "ContactPoint",
+          telephone: SITE_CONTACT.telephone,
+          contactType: "sales",
+          areaServed: ["NA", "KE", "NG"],
+          availableLanguage: ["English"],
+        },
+      ],
+      sameAs: [SOCIAL_LINKEDIN, url],
       areaServed: [
         { "@type": "Country", name: "Namibia" },
         { "@type": "Country", name: "Kenya" },
         { "@type": "Country", name: "Nigeria" },
+      ],
+    };
+
+    // ── 3. LocalBusiness / ProfessionalService schema
+    const serviceJsonLd = {
+      "@context": "https://schema.org",
+      "@type": ["LocalBusiness", "ProfessionalService"],
+      "@id": `${url}#localbusiness`,
+      name: SITE_NAME,
+      alternateName: "CRG Consulting",
+      description: HOME_DESCRIPTION,
+      url: url,
+      image: absolutize(OG_IMAGE),
+      telephone: SITE_CONTACT.telephone,
+      priceRange: "$$",
+      currenciesAccepted: "NAD, USD",
+      openingHoursSpecification: [
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          opens: "08:00",
+          closes: "17:00",
+        },
+      ],
+      areaServed: [
+        { "@type": "Country", name: "Namibia" },
+        { "@type": "Country", name: "Kenya" },
+        { "@type": "Country", name: "Nigeria" },
+      ],
+      knowsAbout: [
+        "Research Consulting",
+        "Policy Research",
+        "Land and Natural Resources",
+        "International Development",
+        "Oil and Gas Consulting",
+        "Mining Consulting",
+        "Health Consulting",
+        "Feasibility Studies",
+        "MEL Consulting",
+        "Geospatial Intelligence",
+        "Strategic Advisory",
       ],
       foundingDate: "2021",
       address: {
@@ -108,7 +181,21 @@ export const Route = createFileRoute("/")({
         latitude: SITE_CONTACT.geo.latitude,
         longitude: SITE_CONTACT.geo.longitude,
       },
-      sameAs: [SOCIAL_LINKEDIN],
+      sameAs: [SOCIAL_LINKEDIN, url],
+    };
+
+    // ── 4. BreadcrumbList schema
+    const breadcrumbJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: url,
+        },
+      ],
     };
 
     return {
@@ -118,18 +205,25 @@ export const Route = createFileRoute("/")({
         { name: "geo.placename", content: "Windhoek, Namibia" },
         { name: "geo.position", content: "-22.5609;17.0898" },
         { name: "ICBM", content: "-22.5609,17.0898" },
+        { name: "classification", content: "Research & Consulting" },
+        { name: "category", content: "Research Consulting, Strategic Advisory, Africa" },
+        { name: "coverage", content: "Worldwide" },
+        { name: "target", content: "all" },
+        { name: "HandheldFriendly", content: "True" },
+        { name: "MobileOptimized", content: "320" },
       ],
       links,
       scripts: [
         {
           type: "application/ld+json",
-          children: JSON.stringify([orgJsonLd, serviceJsonLd]),
+          children: JSON.stringify([websiteJsonLd, orgJsonLd, serviceJsonLd, breadcrumbJsonLd]),
         },
       ],
     };
   },
   component: Index,
 });
+
 
 const STATS = [
   { value: "2021", label: "Founded as a Research Group" },
@@ -238,7 +332,7 @@ function Index() {
     }
 
     const SERVICE_ID = (import.meta.env["VITE_EMAILJS_SERVICE_ID"] as string) || "service_xy02h98";
-    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_crg_contact";
+    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_556y6kc";
     const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "KDbRoxF7KPYV8fNU8";
 
     setSubmitting(true);
