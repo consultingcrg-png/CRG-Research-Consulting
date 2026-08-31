@@ -238,8 +238,8 @@ function Index() {
     }
 
     const SERVICE_ID = (import.meta.env["VITE_EMAILJS_SERVICE_ID"] as string) || "service_xy02h98";
-    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_default";
-    const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "";
+    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_crg_contact";
+    const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "KDbRoxF7KPYV8fNU8";
 
     setSubmitting(true);
     try {
@@ -248,12 +248,15 @@ function Index() {
           SERVICE_ID,
           TEMPLATE_ID,
           {
+            name: name,
             from_name: name,
+            email: email,
             from_email: email,
             sector: sector,
             message: message,
             reply_to: email,
             to_domain: "crg-research.com",
+            submitted_at: new Date().toLocaleString("en-GB"),
           },
           PUBLIC_KEY
         );
@@ -264,10 +267,7 @@ function Index() {
       });
     } catch (err) {
       console.error("EmailJS submission error:", err);
-      // Still provide friendly notification if public key is in setup
-      toast.success(`Thank you, ${name}!`, {
-        description: `Your ${sector} inquiry has been received. Our team will contact you at ${email}.`,
-      });
+      toast.error("Could not send your inquiry. Please try again or email us directly.");
     } finally {
       setSubmitting(false);
     }
