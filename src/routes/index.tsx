@@ -5,21 +5,21 @@ import {
   BarChart3,
   Bolt,
   Briefcase,
-  CheckCircle2,
+  Building2,
   Compass,
   Earth,
   Fuel,
   Gem,
+  Globe,
   GraduationCap,
   HandshakeIcon,
   HeartPulse,
-  Layers,
   Lightbulb,
+  Mail,
   MapPin,
   Microscope,
   Phone,
   Plane,
-  SearchCheck,
   ShieldHalf,
   TreePine,
 } from "lucide-react";
@@ -234,40 +234,34 @@ const STATS = [
 
 const SERVICES = [
   {
-    icon: Compass,
-    title: "Strategic & Policy Advisory",
-    description:
-      "Evidence-based policy formulation, institutional reform strategies, and governance advisory for governments, international development partners, and private institutions.",
-  },
-  {
-    icon: SearchCheck,
-    title: "Fieldwork & Primary Research",
-    description:
-      "Comprehensive quantitative and qualitative field research, household surveys, community consultations, and baseline assessments across Africa.",
-  },
-  {
     icon: BarChart3,
-    title: "Sector & Feasibility Studies",
+    title: "Research, Market Intelligence & Data Analytics",
     description:
-      "Techno-economic evaluations, market entry analyses, regulatory reviews, and socio-economic impact assessments across emerging sectors.",
+      "We deliver cross-sector research, intelligence, forecasting, modelling and data insights across agriculture, energy, finance, health, technology, land and other industries.",
   },
   {
-    icon: CheckCircle2,
-    title: "Monitoring, Evaluation & Learning (MEL)",
+    icon: Compass,
+    title: "Strategy, Policy & Business Transformation",
     description:
-      "Robust M&E frameworks, outcome tracking, mid-term and end-line evaluations, and learning agendas to maximize programme accountability.",
+      "We advise governments, NGOs and businesses on policy, regulation, trade and compliance, as well as organizational design, growth, efficiency and transformation.",
+  },
+  {
+    icon: ShieldHalf,
+    title: "Sustainability, ESG & Risk Advisory",
+    description:
+      "We deliver impact assessments, climate-risk analysis, governance frameworks, and resilience planning for geopolitical, financial and operational risks across local and cross-border stakeholders.",
+  },
+  {
+    icon: Earth,
+    title: "International Development, Monitoring & Stakeholder Solutions",
+    description:
+      "We design programmes, monitor and evaluate impact, facilitate inclusive dialogue, conduct social-impact studies and build grassroots partnerships for governments and international organizations.",
   },
   {
     icon: GraduationCap,
-    title: "Capacity Building & Training",
+    title: "Training, Capacity Building & Innovation Advisory",
     description:
-      "Tailored executive workshops, policy toolkits, institutional development programmes, and skills transfer to empower local teams.",
-  },
-  {
-    icon: Layers,
-    title: "Data Analytics & Geospatial Intelligence",
-    description:
-      "Advanced GIS mapping, spatial modeling, survey data analytics, and actionable dashboards turning complex field data into strategic decisions.",
+      "We build institutional and professional capacity through tailored training, technical assistance, knowledge transfer, digital transformation, emerging technologies (including AI and fintech) and R&D support.",
   },
 ];
 
@@ -301,9 +295,26 @@ const SECTORS = [
 ];
 
 const HUBS = [
-  { title: "Namibia" },
-  { title: "Kenya" },
-  { title: "Nigeria" },
+  {
+    title: "Namibia",
+    email: "Namibia@crg-research.com",
+  },
+  {
+    title: "Kenya",
+    email: "Kenya@crg-research.com",
+    company: "CRG Research & Consulting Ltd",
+    phone: "+254723558432",
+    location: "Nairobi, Kenya",
+    industry: "Research, public-private sector and international development consulting",
+  },
+  {
+    title: "Nigeria",
+    email: "Nigeria@crg-research.com",
+    company: "Crowd-Data & Resources Ltd",
+    phone: "+2348035528470",
+    location: "Port Harcourt, Nigeria",
+    industry: "Research, natural resource management & advisory consultancy services",
+  },
 ];
 
 const SECTOR_OPTIONS = SECTORS.map((s) => s.title);
@@ -312,6 +323,7 @@ const MAP_QUERY = "6 Luther Street";
 
 function Index() {
   const [submitting, setSubmitting] = useState(false);
+  const [activeHub, setActiveHub] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -491,16 +503,85 @@ function Index() {
             </Reveal>
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {HUBS.map((hub, i) => (
-                <Reveal key={hub.title} delay={i * 120}>
-                  <div className="hover-lift rounded-xl border-2 border-primary bg-card p-8 shadow-card">
-                    <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
-                      <MapPin className="size-6" />
-                    </span>
-                    <h3 className="mt-4 text-xl font-bold">{hub.title}</h3>
-                  </div>
-                </Reveal>
-              ))}
+              {HUBS.map((hub, i) => {
+                const open = activeHub === hub.title;
+                return (
+                  <Reveal key={hub.title} delay={i * 120}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={open}
+                      onClick={() => setActiveHub(open ? null : hub.title)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setActiveHub(open ? null : hub.title);
+                        }
+                      }}
+                      className="group hover-lift h-full cursor-pointer rounded-xl border-2 border-primary bg-card p-8 text-center shadow-card"
+                    >
+                      <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
+                        <MapPin className="size-6" />
+                      </span>
+                      <h3 className="mt-4 text-xl font-bold">{hub.title}</h3>
+                      <p className="mt-1 text-sm font-semibold text-primary">Tap or hover for contact details</p>
+
+                      <div
+                        className={`mt-4 space-y-2 border-t border-primary/20 pt-4 text-left text-sm ${
+                          open ? "block" : "hidden group-hover:block group-focus-within:block"
+                        }`}
+                      >
+                        <a
+                          href={`mailto:${hub.email}`}
+                          className="flex items-start gap-2 text-muted-foreground transition-colors hover:text-primary"
+                        >
+                          <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
+                          <span>
+                            <span className="font-bold text-primary">Email: </span>
+                            {hub.email}
+                          </span>
+                        </a>
+                        {hub.company && (
+                          <p className="flex items-start gap-2 text-muted-foreground">
+                            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                            <span>
+                              <span className="font-bold text-primary">Company: </span>
+                              {hub.company}
+                            </span>
+                          </p>
+                        )}
+                        {hub.phone && (
+                          <p className="flex items-start gap-2 text-muted-foreground">
+                            <Phone className="mt-0.5 size-4 shrink-0 text-primary" />
+                            <span>
+                              <span className="font-bold text-primary">Phone: </span>
+                              {hub.phone}
+                            </span>
+                          </p>
+                        )}
+                        {hub.location && (
+                          <p className="flex items-start gap-2 text-muted-foreground">
+                            <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+                            <span>
+                              <span className="font-bold text-primary">Location: </span>
+                              {hub.location}
+                            </span>
+                          </p>
+                        )}
+                        {hub.industry && (
+                          <p className="flex items-start gap-2 text-muted-foreground">
+                            <Globe className="mt-0.5 size-4 shrink-0 text-primary" />
+                            <span>
+                              <span className="font-bold text-primary">Industry: </span>
+                              {hub.industry}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
             </div>
 
             {/* Interactive Locations Map */}

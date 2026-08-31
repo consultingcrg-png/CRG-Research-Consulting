@@ -43,14 +43,14 @@ const LOCATIONS: OfficeLocation[] = [
     googleMapsQuery: "Nairobi, Kenya",
   },
   {
-    id: "abuja",
-    city: "Abuja",
+    id: "portharcourt",
+    city: "Port Harcourt",
     country: "Nigeria",
     countryCode: "NG",
-    coordinates: [7.4951, 9.0579],
-    address: "Abuja",
+    coordinates: [7.0171, 4.8156],
+    address: "Port Harcourt",
     isPrimary: false,
-    googleMapsQuery: "Abuja, Nigeria",
+    googleMapsQuery: "Port Harcourt, Nigeria",
   },
 ];
 
