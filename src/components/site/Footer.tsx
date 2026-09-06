@@ -52,7 +52,7 @@ export function Footer() {
 
       <div className="border-t border-sidebar-border">
         <div className="mx-auto max-w-7xl px-5 py-5 text-center text-xs text-sidebar-foreground/70 lg:px-8">
-          © {new Date().getFullYear()} CRG Research &amp; Consulting. All Rights Reserved.
+          © CRG Research &amp; Consulting. All Rights Reserved.
         </div>
 
         <div className="mx-auto max-w-7xl border-t border-sidebar-border px-5 py-4 text-center text-xs text-sidebar-foreground/70 lg:px-8">
