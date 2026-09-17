@@ -18,18 +18,32 @@ const SLIDES = [
     text: "Collaborating with UN agencies, governments and institutions to shape inclusive urban and land policy.",
   },
   {
-    url: "/images/image-3.jpeg",
-    alt: "CRG researchers attending an international conference",
-    kicker: "OUR PEOPLE",
-    title: "Researchers, Analysts & Sector Specialists",
-    text: "A multidisciplinary team turning rigorous field evidence into strategy leaders can act on.",
-  },
-  {
     url: "/images/image-4.jpeg",
     alt: "CRG field research team with community stakeholders",
     kicker: "FIELDWORK",
     title: "Grounded in Communities We Serve",
     text: "Primary data collection and stakeholder engagement across Namibia, Kenya, Nigeria and beyond.",
+  },
+  {
+    url: "/images/image-6.jpeg",
+    alt: "CRG research and consulting team",
+    kicker: "",
+    title: "",
+    text: "",
+  },
+  {
+    url: "/images/image-9.jpeg",
+    alt: "CRG research and consulting",
+    kicker: "INNOVATION",
+    title: "Data-Driven Solutions for Complex Challenges",
+    text: "Leveraging advanced analytics and research methodologies to inform policy and drive sustainable development.",
+  },
+  {
+    url: "/images/image-10.jpeg",
+    alt: "CRG research and consulting",
+    kicker: "IMPACT",
+    title: "Creating Lasting Change Across Africa",
+    text: "Building capacity, strengthening institutions, and empowering communities through evidence-based interventions.",
   },
 ];
 

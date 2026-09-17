@@ -228,7 +228,7 @@ export const Route = createFileRoute("/")({
 const STATS = [
   { value: "2021", label: "Founded as a Research Group" },
   { value: "2025", label: "Evolved into a Global Consultancy" },
-  { value: "3", label: "(Namibia, Kenya and Nigeria)" },
+  { value: "3", label: "Namibia, Kenya and Nigeria" },
   { value: "11-50", label: "Expert Consultants & Researchers" },
 ];
 
