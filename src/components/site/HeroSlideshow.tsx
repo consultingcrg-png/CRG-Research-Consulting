@@ -24,28 +24,7 @@ const SLIDES = [
     title: "Grounded in Communities We Serve",
     text: "Primary data collection and stakeholder engagement across Namibia, Kenya, Nigeria and beyond.",
   },
-  {
-    url: "/images/image-6.jpeg",
-    alt: "CRG research and consulting team",
-    kicker: "",
-    title: "",
-    text: "",
-  },
-  {
-    url: "/images/image-9.jpeg",
-    alt: "CRG research and consulting",
-    kicker: "INNOVATION",
-    title: "Data-Driven Solutions for Complex Challenges",
-    text: "Leveraging advanced analytics and research methodologies to inform policy and drive sustainable development.",
-  },
-  {
-    url: "/images/image-10.jpeg",
-    alt: "CRG research and consulting",
-    kicker: "IMPACT",
-    title: "Creating Lasting Change Across Africa",
-    text: "Building capacity, strengthening institutions, and empowering communities through evidence-based interventions.",
-  },
-];
+  ];
 
 const DURATION = 8000;
 

@@ -3,25 +3,20 @@ import { useState, type FormEvent } from "react";
 import emailjs from "@emailjs/browser";
 import {
   BarChart3,
-  Bolt,
   Briefcase,
   Building2,
   Compass,
   Earth,
-  Fuel,
-  Gem,
   Globe,
   GraduationCap,
   HandshakeIcon,
-  HeartPulse,
   Lightbulb,
   Mail,
   MapPin,
   Microscope,
   Phone,
-  Plane,
   ShieldHalf,
-  TreePine,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/site/Navbar";
@@ -283,15 +278,15 @@ const PILLARS = [
   },
 ];
 
-const SECTORS = [
-  { icon: TreePine, title: "Land & Natural Resources" },
-  { icon: Fuel, title: "Oil & Gas" },
-  { icon: Plane, title: "Tourism & Hospitality" },
-  { icon: Bolt, title: "Energy" },
-  { icon: HeartPulse, title: "Health" },
-  { icon: Gem, title: "Mining" },
-  { icon: ShieldHalf, title: "Defence" },
-  { icon: Earth, title: "International Development" },
+const SECTORS: { title: string; image?: string; icon?: LucideIcon }[] = [
+  { image: "/images/land-natural-resources.jpg", title: "Land & Natural Resources" },
+  { image: "/images/oil-and-gas.jpg", title: "Oil & Gas" },
+  { image: "/images/tourism-and-hospitality.jpg", title: "Tourism & Hospitality" },
+  { image: "/images/energy.jpg", title: "Energy" },
+  { image: "/images/health.jpg", title: "Health" },
+  { image: "/images/mining.jpg", title: "Mining" },
+  { image: "/images/defence.jpg", title: "Defence" },
+  { image: "/images/international-development.jpg", title: "International Development" },
 ];
 
 const HUBS = [
@@ -477,11 +472,35 @@ function Index() {
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {SECTORS.map((sector, i) => (
                 <Reveal key={sector.title} delay={i * 70}>
-                  <div className="hover-lift group h-full rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card">
-                    <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
-                      <sector.icon className="size-6" />
-                    </span>
-                    <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
+                  <div
+                    className={
+                      sector.image
+                        ? "hover-lift group relative h-full min-h-36 overflow-hidden rounded-xl border-2 border-primary shadow-card"
+                        : "hover-lift group h-full min-h-36 rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card"
+                    }
+                  >
+                    {sector.image ? (
+                      <>
+                        <img
+                          src={sector.image}
+                          alt={sector.title}
+                          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                        <h3 className="absolute inset-x-0 bottom-0 p-4 text-sm font-bold text-primary-foreground sm:text-base">
+                          {sector.title}
+                        </h3>
+                      </>
+                    ) : (
+                      <>
+                        <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
+                          {sector.icon && <sector.icon className="size-6" />}
+                        </span>
+                        <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
+                      </>
+                    )}
                   </div>
                 </Reveal>
               ))}

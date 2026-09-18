@@ -7,7 +7,14 @@ const LOGO_URL = "/crg-logo.png";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
-  { label: "About Us", href: "/#about" },
+  {
+    label: "About Us",
+    children: [
+      { label: "The Board", href: "/about#board" },
+      { label: "Staff", href: "/about#staff" },
+      { label: "Consultants", href: "/about#consultants" },
+    ],
+  },
   { label: "Services", href: "/#services" },
   { label: "Sectors", href: "/#sectors" },
   {
@@ -24,7 +31,7 @@ const NAV_ITEMS = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [mobilePortfolioOpen, setMobilePortfolioOpen] = useState(false);
+  const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
   const location = useLocation();
 
   const isHome = location.pathname === "/" || location.pathname === "";
@@ -38,7 +45,7 @@ export function Navbar() {
 
   useEffect(() => {
     setOpen(false);
-    setMobilePortfolioOpen(false);
+    setOpenMobileSubmenu(null);
   }, [location.pathname]);
 
   const isTransparent = isHome && !scrolled;
@@ -164,7 +171,7 @@ export function Navbar() {
                 <div key={item.label}>
                   <button
                     type="button"
-                    onClick={() => setMobilePortfolioOpen((v) => !v)}
+                    onClick={() => setOpenMobileSubmenu((v) => (v === item.label ? null : item.label))}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
                     style={{ transitionDelay: `${i * 30}ms` }}
                   >
@@ -172,14 +179,14 @@ export function Navbar() {
                     <ChevronDown
                       className={cn(
                         "ml-auto size-4 transition-transform duration-300",
-                        mobilePortfolioOpen && "rotate-180",
+                        openMobileSubmenu === item.label && "rotate-180",
                       )}
                     />
                   </button>
                   <div
                     className={cn(
                       "overflow-hidden transition-[max-height,opacity] duration-300",
-                      mobilePortfolioOpen
+                      openMobileSubmenu === item.label
                         ? "max-h-40 opacity-100"
                         : "max-h-0 opacity-0",
                     )}
