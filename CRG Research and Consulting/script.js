@@ -25,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
+        emailjs.sendForm('service_e3qg9hr', 'template_su3w87h', contactForm)
+    .then(() => {
         const name = document.getElementById('name').value;
         const email = document.getElementById('email').value;
         const sector = document.getElementById('sectorSelect').value;
@@ -35,5 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset form
         contactForm.reset();
+        }, (error) => {
+      alert('Failed to send message: ' + JSON.stringify(error));
     });
 });
