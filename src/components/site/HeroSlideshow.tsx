@@ -10,6 +10,7 @@ type Slide = {
   kicker: string;
   title: string;
   text: string;
+  isNews?: boolean;
 };
 
 type NewsArticle = {
@@ -76,6 +77,7 @@ export function HeroSlideshow() {
         kicker: (article.category || article.sector || "News").toUpperCase(),
         title: article.title,
         text: article.summary ?? article.content ?? "",
+        isNews: true,
       }));
     return newsSlides.length > 0 ? newsSlides : DEFAULT_SLIDES;
   }, [news]);
@@ -181,6 +183,7 @@ export function HeroSlideshow() {
                 draggable={false}
                 className={cn(
                   "size-full object-cover object-center transform-gpu",
+                  slide.isNews && "object-contain",
                   isCurrent && "animate-slow-zoom",
                 )}
               />
