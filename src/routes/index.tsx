@@ -2,20 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import emailjs from "@emailjs/browser";
 import {
-  BarChart3,
+Bolt,
   Briefcase,
   Building2,
-  Compass,
-  Earth,
   Globe,
-  GraduationCap,
   HandshakeIcon,
   Lightbulb,
   Mail,
   MapPin,
   Microscope,
   Phone,
-  ShieldHalf,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -227,33 +223,33 @@ const STATS = [
   { value: "11-50", label: "Expert Consultants & Researchers" },
 ];
 
-const SERVICES = [
+const SERVICES: { title: string; description: string; image?: string; icon?: LucideIcon }[] = [
   {
-    icon: BarChart3,
+    image: "/images/service-icon-1.png",
     title: "Research, Market Intelligence & Data Analytics",
     description:
       "We deliver cross-sector research, intelligence, forecasting, modelling and data insights across agriculture, energy, finance, health, technology, land and other industries.",
   },
   {
-    icon: Compass,
+    image: "/images/service-card-2.jpg",
     title: "Strategy, Policy & Business Transformation",
     description:
       "We advise governments, NGOs and businesses on policy, regulation, trade and compliance, as well as organizational design, growth, efficiency and transformation.",
   },
   {
-    icon: ShieldHalf,
+    image: "/images/service-card-3.png",
     title: "Sustainability, ESG & Risk Advisory",
     description:
       "We deliver impact assessments, climate-risk analysis, governance frameworks, and resilience planning for geopolitical, financial and operational risks across local and cross-border stakeholders.",
   },
   {
-    icon: Earth,
+    image: "/images/service-card-4.png",
     title: "International Development, Monitoring & Stakeholder Solutions",
     description:
       "We design programmes, monitor and evaluate impact, facilitate inclusive dialogue, conduct social-impact studies and build grassroots partnerships for governments and international organizations.",
   },
   {
-    icon: GraduationCap,
+    image: "/images/service-card-5.jpeg",
     title: "Training, Capacity Building & Innovation Advisory",
     description:
       "We build institutional and professional capacity through tailored training, technical assistance, knowledge transfer, digital transformation, emerging technologies (including AI and fintech) and R&D support.",
@@ -293,10 +289,12 @@ const HUBS = [
   {
     title: "Namibia",
     email: "Namibia@crg-research.com",
+    flag: "/images/flag-1.jpg",
   },
   {
     title: "Kenya",
     email: "Kenya@crg-research.com",
+    flag: "/images/flag-2.jpeg",
     company: "CRG Research & Consulting Ltd",
     phone: "+254723558432",
     location: "Nairobi, Kenya",
@@ -305,6 +303,7 @@ const HUBS = [
   {
     title: "Nigeria",
     email: "Nigeria@crg-research.com",
+    flag: "/images/flag-3.jpeg",
     company: "Crowd-Data & Resources Ltd",
     phone: "+2348035528470",
     location: "Port Harcourt, Nigeria",
@@ -314,7 +313,7 @@ const HUBS = [
 
 const SECTOR_OPTIONS = SECTORS.map((s) => s.title);
 
-const MAP_QUERY = "6 Luther Street";
+const MAP_QUERY = "6 Luther Street, Windhoek, Namibia";
 
 function Index() {
   const [submitting, setSubmitting] = useState(false);
@@ -442,11 +441,31 @@ function Index() {
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {SERVICES.map((service, i) => (
                 <Reveal key={service.title} delay={i * 80}>
-                  <div className="hover-lift group flex h-full flex-col justify-between rounded-xl border-2 border-primary bg-card p-7 shadow-card">
-                    <div>
-                      <span className="grid size-12 place-items-center rounded-lg bg-accent-gradient text-accent-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
-                        <service.icon className="size-6" />
-                      </span>
+                  <div
+                    className={
+                      service.image
+                        ? "hover-lift group flex h-full flex-col overflow-hidden rounded-xl border-2 border-primary bg-card shadow-card"
+                        : "hover-lift group flex h-full flex-col justify-between rounded-xl border-2 border-primary bg-card p-7 shadow-card"
+                    }
+                  >
+                    {service.image && (
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-secondary">
+                        <img
+                          src={service.image}
+                          alt={service.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-hero-gradient opacity-50" />
+                      </div>
+                    )}
+                    <div className={service.image ? "flex flex-1 flex-col p-7" : undefined}>
+                      {!service.image && (
+                        <span className="grid size-12 place-items-center rounded-lg bg-accent-gradient text-accent-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
+                          {service.icon && <service.icon className="size-6" />}
+                        </span>
+                      )}
                       <h3 className="mt-5 text-lg font-bold text-primary">{service.title}</h3>
                       <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                         {service.description}
@@ -464,9 +483,9 @@ function Index() {
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <Reveal className="mx-auto max-w-2xl text-center">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
-                OUR SPECIALTIES
+                AREAS OF FOCUS
               </span>
-              <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Key Operating Sectors</h2>
+              <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Our Expertise</h2>
             </Reveal>
 
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -524,6 +543,7 @@ function Index() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {HUBS.map((hub, i) => {
                 const open = activeHub === hub.title;
+                const flag = !!hub.flag;
                 return (
                   <Reveal key={hub.title} delay={i * 120}>
                     <div
@@ -537,65 +557,97 @@ function Index() {
                           setActiveHub(open ? null : hub.title);
                         }
                       }}
-                      className="group hover-lift h-full cursor-pointer rounded-xl border-2 border-primary bg-card p-8 text-center shadow-card"
+                      className={
+                        flag
+                          ? "group hover-lift relative h-full min-h-52 cursor-pointer overflow-hidden rounded-xl border-2 border-primary shadow-card"
+                          : "group hover-lift h-full cursor-pointer rounded-xl border-2 border-primary bg-card p-8 text-center shadow-card"
+                      }
                     >
-                      <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
-                        <MapPin className="size-6" />
-                      </span>
-                      <h3 className="mt-4 text-xl font-bold">{hub.title}</h3>
-                      <p className="mt-1 text-sm font-semibold text-primary">Tap or hover for contact details</p>
-
+                      {flag && (
+                        <>
+                          <img
+                            src={hub.flag}
+                            alt={`${hub.title} flag`}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+                        </>
+                      )}
                       <div
-                        className={`mt-4 space-y-2 border-t border-primary/20 pt-4 text-left text-sm ${
-                          open ? "block" : "hidden group-hover:block group-focus-within:block"
-                        }`}
+                        className={
+                          flag
+                            ? "relative z-10 flex min-h-full flex-col items-center justify-center p-6 text-center"
+                            : undefined
+                        }
                       >
-                        <a
-                          href={`mailto:${hub.email}`}
-                          className="flex items-start gap-2 text-muted-foreground transition-colors hover:text-primary"
-                        >
-                          <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
-                          <span>
-                            <span className="font-bold text-primary">Email: </span>
-                            {hub.email}
+                        {!flag && (
+                          <span className="animate-float mx-auto grid size-12 place-items-center rounded-full bg-secondary text-accent">
+                            <MapPin className="size-6" />
                           </span>
-                        </a>
-                        {hub.company && (
-                          <p className="flex items-start gap-2 text-muted-foreground">
-                            <Building2 className="mt-0.5 size-4 shrink-0 text-primary" />
-                            <span>
-                              <span className="font-bold text-primary">Company: </span>
-                              {hub.company}
-                            </span>
-                          </p>
                         )}
-                        {hub.phone && (
-                          <p className="flex items-start gap-2 text-muted-foreground">
-                            <Phone className="mt-0.5 size-4 shrink-0 text-primary" />
+                        <h3 className={`mt-4 text-xl font-bold ${flag ? "text-primary-foreground" : ""}`}>
+                          {hub.title}
+                        </h3>
+                        <p className={`mt-1 text-sm font-semibold ${flag ? "text-primary-foreground/80" : "text-primary"}`}>
+                          Tap or hover for contact details
+                        </p>
+
+                        <div
+                          className={`mt-4 space-y-2 border-t pt-4 text-left text-sm ${
+                            flag ? "border-primary-foreground/30" : "border-primary/20"
+                          } ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}
+                        >
+                          <a
+                            href={`mailto:${hub.email}`}
+                            className={`flex items-start gap-2 transition-colors ${
+                              flag ? "text-primary-foreground/80 hover:text-primary-foreground" : "text-muted-foreground hover:text-primary"
+                            }`}
+                          >
+                            <Mail className={`mt-0.5 size-4 shrink-0 ${flag ? "text-primary-foreground" : "text-primary"}`} />
                             <span>
-                              <span className="font-bold text-primary">Phone: </span>
-                              {hub.phone}
+                              <span className={`font-bold ${flag ? "text-primary-foreground" : "text-primary"}`}>Email: </span>
+                              {hub.email}
                             </span>
-                          </p>
-                        )}
-                        {hub.location && (
-                          <p className="flex items-start gap-2 text-muted-foreground">
-                            <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
-                            <span>
-                              <span className="font-bold text-primary">Location: </span>
-                              {hub.location}
-                            </span>
-                          </p>
-                        )}
-                        {hub.industry && (
-                          <p className="flex items-start gap-2 text-muted-foreground">
-                            <Globe className="mt-0.5 size-4 shrink-0 text-primary" />
-                            <span>
-                              <span className="font-bold text-primary">Industry: </span>
-                              {hub.industry}
-                            </span>
-                          </p>
-                        )}
+                          </a>
+                          {hub.company && (
+                            <p className={`flex items-start gap-2 ${flag ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                              <Building2 className={`mt-0.5 size-4 shrink-0 ${flag ? "text-primary-foreground" : "text-primary"}`} />
+                              <span>
+                                <span className={`font-bold ${flag ? "text-primary-foreground" : "text-primary"}`}>Company: </span>
+                                {hub.company}
+                              </span>
+                            </p>
+                          )}
+                          {hub.phone && (
+                            <p className={`flex items-start gap-2 ${flag ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                              <Phone className={`mt-0.5 size-4 shrink-0 ${flag ? "text-primary-foreground" : "text-primary"}`} />
+                              <span>
+                                <span className={`font-bold ${flag ? "text-primary-foreground" : "text-primary"}`}>Phone: </span>
+                                {hub.phone}
+                              </span>
+                            </p>
+                          )}
+                          {hub.location && (
+                            <p className={`flex items-start gap-2 ${flag ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                              <MapPin className={`mt-0.5 size-4 shrink-0 ${flag ? "text-primary-foreground" : "text-primary"}`} />
+                              <span>
+                                <span className={`font-bold ${flag ? "text-primary-foreground" : "text-primary"}`}>Location: </span>
+                                {hub.location}
+                              </span>
+                            </p>
+                          )}
+                          {hub.industry && (
+                            <p className={`flex items-start gap-2 ${flag ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                              <Globe className={`mt-0.5 size-4 shrink-0 ${flag ? "text-primary-foreground" : "text-primary"}`} />
+                              <span>
+                                <span className={`font-bold ${flag ? "text-primary-foreground" : "text-primary"}`}>Industry: </span>
+                                {hub.industry}
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Reveal>

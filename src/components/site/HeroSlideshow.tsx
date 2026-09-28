@@ -1,8 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-const SLIDES = [
+type Slide = {
+  url: string;
+  alt: string;
+  kicker: string;
+  title: string;
+  text: string;
+};
+
+type NewsArticle = {
+  id: string;
+  title: string;
+  summary?: string | null;
+  content?: string | null;
+  sector?: string | null;
+  category?: string | null;
+  image_urls: string[];
+};
+
+const DEFAULT_SLIDES: Slide[] = [
   {
     url: "/images/image-8.jpeg",
     alt: "CRG delegates at the International Federation of Surveyors sustainable development goals exhibition",
@@ -11,20 +31,27 @@ const SLIDES = [
     text: "Evidence-based solutions across global industries, unlocking sustainable growth and measurable impact.",
   },
   {
-    url: "/images/image-5.jpeg",
-    alt: "CRG team meeting with UN-Habitat representatives",
-    kicker: "PARTNERSHIPS",
-    title: "Working With Global Development Partners",
-    text: "Collaborating with UN agencies, governments and institutions to shape inclusive urban and land policy.",
-  },
-  {
     url: "/images/image-4.jpeg",
     alt: "CRG field research team with community stakeholders",
     kicker: "FIELDWORK",
     title: "Grounded in Communities We Serve",
     text: "Primary data collection and stakeholder engagement across Namibia, Kenya, Nigeria and beyond.",
   },
-  ];
+];
+
+async function fetchPublishedNews(): Promise<NewsArticle[]> {
+  const { data, error } = await supabase
+    .from("news")
+    .select("id,title,summary,content,news_date,sector,category,image_urls,external_link,status")
+    .eq("status", "published")
+    .order("news_date", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    ...row,
+    image_urls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
+  })) as NewsArticle[];
+}
 
 const DURATION = 8000;
 
@@ -35,20 +62,52 @@ export function HeroSlideshow() {
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
-  const go = useCallback((next: number) => {
-    const total = SLIDES.length;
-    const target = ((next % total) + total) % total;
-    setIndex(target);
-    // Preload current, next, and previous slides to ensure smooth crossfade
-    const following = (target + 1) % total;
-    const previous = (target - 1 + total) % total;
-    setLoaded((prev) => {
-      const needed = [target, following, previous];
-      return needed.every((i) => prev.includes(i))
-        ? prev
-        : Array.from(new Set([...prev, ...needed]));
-    });
-  }, []);
+  const { data: news } = useQuery({
+    queryKey: ["news", "slideshow"],
+    queryFn: fetchPublishedNews,
+  });
+
+  const slides = useMemo(() => {
+    const newsSlides = (news ?? [])
+      .filter((article) => article.image_urls.length > 0)
+      .map((article) => ({
+        url: article.image_urls[0]!,
+        alt: article.title,
+        kicker: (article.category || article.sector || "News").toUpperCase(),
+        title: article.title,
+        text: article.summary ?? article.content ?? "",
+      }));
+    return newsSlides.length > 0 ? newsSlides : DEFAULT_SLIDES;
+  }, [news]);
+
+  const go = useCallback(
+    (next: number) => {
+      const total = slides.length;
+      const target = ((next % total) + total) % total;
+      setIndex(target);
+      // Preload current, next, and previous slides to ensure smooth crossfade
+      const following = (target + 1) % total;
+      const previous = (target - 1 + total) % total;
+      setLoaded((prev) => {
+        const needed = [target, following, previous];
+        return needed.every((i) => prev.includes(i))
+          ? prev
+          : Array.from(new Set([...prev, ...needed]));
+      });
+    },
+    [slides.length],
+  );
+
+  // Reset to the first slide whenever the slide set changes (e.g. news arrives)
+  useEffect(() => {
+    setIndex(0);
+    setLoaded([0, 1]);
+  }, [slides]);
+
+  // Guard against an out-of-range index if the slide set shrinks
+  useEffect(() => {
+    if (index >= slides.length) setIndex(0);
+  }, [index, slides.length]);
 
   // Continuous 8-second loop that never stops. Restarted cleanly on every
   // index change so the cadence stays consistent across mobile and desktop.
@@ -69,7 +128,7 @@ export function HeroSlideshow() {
     return () => window.removeEventListener("keydown", onKey);
   }, [index, go]);
 
-  const active = useMemo(() => SLIDES[index] ?? SLIDES[0]!, [index]);
+  const active = useMemo(() => slides[index] ?? slides[0]!, [index, slides]);
 
   return (
     <section
@@ -99,7 +158,7 @@ export function HeroSlideshow() {
         }
       }}
     >
-      {SLIDES.map((slide, i) => {
+      {slides.map((slide, i) => {
         const isCurrent = i === index;
         const isPrimed = loaded.includes(i);
 
@@ -192,7 +251,7 @@ export function HeroSlideshow() {
       {/* Progress indicators - Responsive & Smooth across mobile & desktop */}
       <div className="absolute bottom-6 left-1/2 z-20 flex w-[min(90%,28rem)] -translate-x-1/2 items-center gap-2.5 sm:bottom-8 sm:gap-3">
         <div className="flex flex-1 items-center gap-2 sm:gap-2.5">
-          {SLIDES.map((slide, i) => (
+          {slides.map((slide, i) => (
             <button
               key={slide.url}
               type="button"

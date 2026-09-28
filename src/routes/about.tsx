@@ -129,8 +129,7 @@ function PeopleSection({
           <Reveal className="mt-12">
             <div className="mx-auto max-w-md rounded-xl border-2 border-dashed border-border bg-card p-10 text-center shadow-card">
               <Icon className="mx-auto size-8 text-accent" />
-              <p className="mt-3 text-sm font-semibold text-primary">Profiles coming soon</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-3 text-sm text-muted-foreground">
                 Individual profiles for this group will be published here.
               </p>
             </div>
