@@ -43,7 +43,7 @@ export function RecentNews() {
   const latestItems = allItems.slice(0, 3);
 
   return (
-    <section id="news" className="scroll-mt-24 bg-surface py-20 lg:py-28">
+    <section id="news" className="scroll-mt-24 py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-bold tracking-[0.2em] text-accent">MEDIA & ANNOUNCEMENTS</span>

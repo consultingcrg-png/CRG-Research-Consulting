@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,6 @@ type Slide = {
   kicker: string;
   title: string;
   text: string;
-  isNews?: boolean;
 };
 
 type NewsArticle = {
@@ -77,7 +77,6 @@ export function HeroSlideshow() {
         kicker: (article.category || article.sector || "News").toUpperCase(),
         title: article.title,
         text: article.summary ?? article.content ?? "",
-        isNews: true,
       }));
     return newsSlides.length > 0 ? newsSlides : DEFAULT_SLIDES;
   }, [news]);
@@ -183,7 +182,6 @@ export function HeroSlideshow() {
                 draggable={false}
                 className={cn(
                   "size-full object-cover object-center transform-gpu",
-                  slide.isNews && "object-contain",
                   isCurrent && "animate-slow-zoom",
                 )}
               />
@@ -229,6 +227,13 @@ export function HeroSlideshow() {
             >
               Our History
             </a>
+            <Link
+              to="/news"
+              className="animate-glow inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-primary transition-transform duration-300 hover:-translate-y-0.5 sm:px-7"
+            >
+              <Newspaper className="size-4" />
+              Latest News & Updates
+            </Link>
           </div>
         </div>
       </div>

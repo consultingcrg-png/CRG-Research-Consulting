@@ -275,20 +275,20 @@ const PILLARS = [
 ];
 
 const SECTORS: { title: string; image?: string; icon?: LucideIcon }[] = [
-  { image: "/images/land-natural-resources.jpg", title: "Land & Natural Resources" },
-  { image: "/images/oil-and-gas.jpg", title: "Oil & Gas" },
-  { image: "/images/tourism-and-hospitality.jpg", title: "Tourism & Hospitality" },
+  { image: "/images/land-natural-resources.jpg", title: "Land, Natural resources and mining" },
   { image: "/images/energy.jpg", title: "Energy" },
-  { image: "/images/health.jpg", title: "Health" },
-  { image: "/images/mining.jpg", title: "Mining" },
-  { image: "/images/defence.jpg", title: "Defence" },
-  { image: "/images/international-development.jpg", title: "International Development" },
+  { image: "/images/sect-3.jpg", title: "Agriculture & Agri business" },
+  { image: "/images/sect-4.jpg", title: "Water resources management" },
+  { image: "/images/sect-5.jpg", title: "Climate change, biodiversity and health" },
+  { image: "/images/international-development.jpg", title: "Digital information and e-environmental" },
+  { image: "/images/sect-7.jpeg", title: "Policy & economic research" },
+  { image: "/images/sect-8.jpeg", title: "Capacity development and training" },
 ];
 
 const HUBS = [
   {
     title: "Namibia",
-    email: "Namibia@crg-research.com",
+    email: "info@crg-research.com",
     flag: "/images/flag-1.jpg",
   },
   {
@@ -337,12 +337,14 @@ function Index() {
       return;
     }
 
-    const SERVICE_ID = (import.meta.env["VITE_EMAILJS_SERVICE_ID"] as string) || "service_xy02h98";
-    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_556y6kc";
-    const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "KDbRoxF7KPYV8fNU8";
+    const SERVICE_ID = (import.meta.env["VITE_EMAILJS_SERVICE_ID"] as string) || "service_29ub7jg";
+    const TEMPLATE_ID = (import.meta.env["VITE_EMAILJS_TEMPLATE_ID"] as string) || "template_4amjzqa";
+    const PUBLIC_KEY = (import.meta.env["VITE_EMAILJS_PUBLIC_KEY"] as string) || "Z88DBl1ez14deH_pf";
 
     setSubmitting(true);
     try {
+      // Debug: confirm what is being sent to EmailJS (check F12 > Console)
+      console.log("Contact form payload:", { name, email, sector, message });
       if (PUBLIC_KEY) {
         await emailjs.send(
           SERVICE_ID,
@@ -363,20 +365,65 @@ function Index() {
       }
       form.reset();
       toast.success(`Thank you, ${name}!`, {
-        description: `Your ${sector} inquiry has been received. Our team will contact you at ${email}.`,
+        description: `Your ${sector} inquiry has been received. Our team will contact you at info@crg-research.com.`,
       });
     } catch (err) {
       console.error("EmailJS submission error:", err);
-      toast.error("Could not send your inquiry. Please try again or email us directly.");
+      toast.error("Could not send your inquiry. Please try again or email us directly at info@crg-research.com.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main>
+    <div className="relative min-h-screen">
+      {/* Animated rotating globe background */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden"
+      >
+        <div className="aspect-square w-[150vmin] shrink-0">
+          <svg viewBox="0 0 200 200" className="h-full w-full opacity-15" fill="none">
+            <defs>
+              <radialGradient id="crg-globe-grad" cx="35%" cy="30%" r="80%">
+                <stop offset="0%" stopColor="var(--color-accent)" />
+                <stop offset="65%" stopColor="var(--color-primary)" />
+                <stop offset="100%" stopColor="var(--color-primary)" />
+              </radialGradient>
+            </defs>
+            <circle
+              cx="100"
+              cy="100"
+              r="97"
+              fill="url(#crg-globe-grad)"
+              stroke="var(--color-accent)"
+              strokeOpacity="0.6"
+              strokeWidth="1.5"
+            />
+            <g stroke="var(--color-accent)" strokeLinecap="round" strokeOpacity="0.8">
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 100 100"
+                to="360 100 100"
+                dur="90s"
+                repeatCount="indefinite"
+              />
+              <path d="M3 100 H197" strokeWidth="0.9" />
+              <ellipse cx="100" cy="100" rx="97" ry="30" strokeWidth="0.7" />
+              <ellipse cx="100" cy="100" rx="97" ry="62" strokeWidth="0.7" />
+              <ellipse cx="100" cy="100" rx="97" ry="86" strokeWidth="0.7" />
+              <ellipse cx="100" cy="100" rx="30" ry="97" strokeWidth="0.7" />
+              <ellipse cx="100" cy="100" rx="62" ry="97" strokeWidth="0.7" />
+              <ellipse cx="100" cy="100" rx="86" ry="97" strokeWidth="0.7" />
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div className="relative z-10">
+        <Navbar />
+        <main>
         <HeroSlideshow />
 
         {/* Stats */}
@@ -479,7 +526,7 @@ function Index() {
         </section>
 
         {/* Sectors */}
-        <section id="sectors" className="scroll-mt-24 bg-surface py-20 lg:py-28">
+        <section id="sectors" className="scroll-mt-24 py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <Reveal className="mx-auto max-w-2xl text-center">
               <span className="text-xs font-bold tracking-[0.2em] text-accent">
@@ -663,7 +710,7 @@ function Index() {
         </section>
 
         {/* Contact */}
-        <section id="contact" className="bg-surface py-20 lg:py-28">
+        <section id="contact" className="py-20 lg:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-2 lg:px-8">
             <Reveal>
               <span className="text-xs font-bold tracking-[0.2em] text-accent">GET IN TOUCH</span>
@@ -756,7 +803,8 @@ function Index() {
           </div>
         </section>
       </main>
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }
