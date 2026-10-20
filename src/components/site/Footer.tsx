@@ -27,7 +27,7 @@ export function Footer() {
           <h4 className="text-sm font-bold tracking-wide text-sidebar-foreground">Head Office</h4>
           <p className="mt-4 flex items-start gap-3 text-sm text-sidebar-foreground/80">
             <MapPin className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />
-            6 Luther Street, Windhoek, Namibia
+            6 Luther Street, The Village, Eros, Windhoek, Namibia
           </p>
           <p className="mt-3 flex items-center gap-3 text-sm text-sidebar-foreground/80">
             <Phone className="size-4 shrink-0 text-sidebar-primary" />
@@ -47,6 +47,15 @@ export function Footer() {
             <Linkedin className="size-4 text-sidebar-primary" />
             Follow us on LinkedIn
           </a>
+          <p className="mt-4 flex items-center gap-3 pl-[21px] text-sm text-sidebar-foreground/80">
+            <Mail className="size-4 shrink-0 text-sidebar-primary" />
+            <a
+              href="mailto:info@crg-research.com"
+              className="transition-colors hover:text-sidebar-primary"
+            >
+              info@crg-research.com
+            </a>
+          </p>
         </div>
       </div>
 

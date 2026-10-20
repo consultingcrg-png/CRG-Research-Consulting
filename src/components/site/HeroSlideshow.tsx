@@ -182,6 +182,7 @@ export function HeroSlideshow() {
                 draggable={false}
                 className={cn(
                   "size-full object-cover object-center transform-gpu",
+                  i === 1 && "object-contain",
                   isCurrent && "animate-slow-zoom",
                 )}
               />

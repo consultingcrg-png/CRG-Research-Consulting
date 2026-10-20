@@ -313,7 +313,7 @@ const HUBS = [
 
 const SECTOR_OPTIONS = SECTORS.map((s) => s.title);
 
-const MAP_QUERY = "6 Luther Street, Windhoek, Namibia";
+const MAP_QUERY = "6 Luther Street, The Village, Eros, Windhoek, Namibia";
 
 function Index() {
   const [submitting, setSubmitting] = useState(false);
@@ -723,6 +723,7 @@ function Index() {
               <div className="mt-8 space-y-4">
                 {[
                   { icon: Phone, label: "Phone", value: "+264 81 3288657" },
+                  { icon: Mail, label: "Email", value: "info@crg-research.com" },
                   { icon: MapPin, label: "Location", value: MAP_QUERY },
                   {
                     icon: Briefcase,
