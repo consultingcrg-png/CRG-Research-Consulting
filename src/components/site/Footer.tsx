@@ -42,7 +42,7 @@ export function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="CRG Research & Consulting on LinkedIn"
-            className="mt-4 inline-flex items-center gap-3 rounded-full border border-sidebar-border px-5 py-2.5 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:bg-sidebar-accent"
+            className="btn-glass-dark mt-4 inline-flex items-center gap-3 rounded-full px-5 py-2.5 text-sm font-semibold"
           >
             <Linkedin className="size-4 text-sidebar-primary" />
             Follow us on LinkedIn

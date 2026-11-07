@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import emailjs from "@emailjs/browser";
 import {
+  ArrowRight,
 Bolt,
   Briefcase,
   Building2,
@@ -223,36 +224,41 @@ const STATS = [
   { value: "11-50", label: "Expert Consultants & Researchers" },
 ];
 
-const SERVICES: { title: string; description: string; image?: string; icon?: LucideIcon }[] = [
+const SERVICES: { title: string; description: string; image?: string; icon?: LucideIcon; href?: string }[] = [
   {
     image: "/images/service-icon-1.png",
     title: "Research, Market Intelligence & Data Analytics",
     description:
       "We deliver cross-sector research, intelligence, forecasting, modelling and data insights across agriculture, energy, finance, health, technology, land and other industries.",
+    href: "/services/research-market-intelligence",
   },
   {
     image: "/images/service-card-2.jpg",
     title: "Strategy, Policy & Business Transformation",
     description:
       "We advise governments, NGOs and businesses on policy, regulation, trade and compliance, as well as organizational design, growth, efficiency and transformation.",
+    href: "/services/strategy-policy-business-transformation",
   },
   {
     image: "/images/service-card-3.png",
     title: "Sustainability, ESG & Risk Advisory",
     description:
       "We deliver impact assessments, climate-risk analysis, governance frameworks, and resilience planning for geopolitical, financial and operational risks across local and cross-border stakeholders.",
+    href: "/services/sustainability-esg-risk-advisory",
   },
   {
     image: "/images/service-card-4.png",
     title: "International Development, Monitoring & Stakeholder Solutions",
     description:
       "We design programmes, monitor and evaluate impact, facilitate inclusive dialogue, conduct social-impact studies and build grassroots partnerships for governments and international organizations.",
+    href: "/services/international-development-monitoring-stakeholder-solutions",
   },
   {
     image: "/images/service-card-5.jpeg",
     title: "Training, Capacity Building & Innovation Advisory",
     description:
       "We build institutional and professional capacity through tailored training, technical assistance, knowledge transfer, digital transformation, emerging technologies (including AI and fintech) and R&D support.",
+    href: "/services/training-capacity-building-innovation-advisory",
   },
 ];
 
@@ -521,8 +527,8 @@ function Index() {
             </Reveal>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {SERVICES.map((service, i) => (
-                <Reveal key={service.title} delay={i * 80}>
+              {SERVICES.map((service, i) => {
+                const card = (
                   <div
                     className={
                       service.image
@@ -552,10 +558,28 @@ function Index() {
                       <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
                         {service.description}
                       </p>
+                      {service.href && (
+                        <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-accent">
+                          Learn more
+                          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        </span>
+                      )}
                     </div>
                   </div>
-                </Reveal>
-              ))}
+                );
+
+                return (
+                  <Reveal key={service.title} delay={i * 80}>
+                    {service.href ? (
+                      <a href={service.href} className="block h-full">
+                        {card}
+                      </a>
+                    ) : (
+                      card
+                    )}
+                  </Reveal>
+                );
+              })}
             </div>
           </div>
         </section>

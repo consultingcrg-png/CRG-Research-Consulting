@@ -17,6 +17,11 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as StaffAccessCrgRouteImport } from './routes/staff-access-crg'
 import { Route as AuthenticatedCrgAdminRouteImport } from './routes/_authenticated/crg-admin'
+import { Route as ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRouteImport } from './routes/services.international-development-monitoring-stakeholder-solutions'
+import { Route as ServicesResearchMarketIntelligenceRouteImport } from './routes/services.research-market-intelligence'
+import { Route as ServicesStrategyPolicyBusinessTransformationRouteImport } from './routes/services.strategy-policy-business-transformation'
+import { Route as ServicesSustainabilityEsgRiskAdvisoryRouteImport } from './routes/services.sustainability-esg-risk-advisory'
+import { Route as ServicesTrainingCapacityBuildingInnovationAdvisoryRouteImport } from './routes/services.training-capacity-building-innovation-advisory'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +62,38 @@ const AuthenticatedCrgAdminRoute = AuthenticatedCrgAdminRouteImport.update({
   path: '/crg-admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute =
+  ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRouteImport.update(
+    {
+      id: '/services/international-development-monitoring-stakeholder-solutions',
+      path: '/services/international-development-monitoring-stakeholder-solutions',
+      getParentRoute: () => rootRouteImport,
+    } as any,
+  )
+const ServicesResearchMarketIntelligenceRoute =
+  ServicesResearchMarketIntelligenceRouteImport.update({
+    id: '/services/research-market-intelligence',
+    path: '/services/research-market-intelligence',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesStrategyPolicyBusinessTransformationRoute =
+  ServicesStrategyPolicyBusinessTransformationRouteImport.update({
+    id: '/services/strategy-policy-business-transformation',
+    path: '/services/strategy-policy-business-transformation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesSustainabilityEsgRiskAdvisoryRoute =
+  ServicesSustainabilityEsgRiskAdvisoryRouteImport.update({
+    id: '/services/sustainability-esg-risk-advisory',
+    path: '/services/sustainability-esg-risk-advisory',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesTrainingCapacityBuildingInnovationAdvisoryRoute =
+  ServicesTrainingCapacityBuildingInnovationAdvisoryRouteImport.update({
+    id: '/services/training-capacity-building-innovation-advisory',
+    path: '/services/training-capacity-building-innovation-advisory',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +103,11 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
+  '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
+  '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
+  '/services/sustainability-esg-risk-advisory': typeof ServicesSustainabilityEsgRiskAdvisoryRoute
+  '/services/training-capacity-building-innovation-advisory': typeof ServicesTrainingCapacityBuildingInnovationAdvisoryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +117,11 @@ export interface FileRoutesByTo {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
+  '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
+  '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
+  '/services/sustainability-esg-risk-advisory': typeof ServicesSustainabilityEsgRiskAdvisoryRoute
+  '/services/training-capacity-building-innovation-advisory': typeof ServicesTrainingCapacityBuildingInnovationAdvisoryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +133,11 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/_authenticated/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
+  '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
+  '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
+  '/services/sustainability-esg-risk-advisory': typeof ServicesSustainabilityEsgRiskAdvisoryRoute
+  '/services/training-capacity-building-innovation-advisory': typeof ServicesTrainingCapacityBuildingInnovationAdvisoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +149,11 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/crg-admin'
+    | '/services/international-development-monitoring-stakeholder-solutions'
+    | '/services/research-market-intelligence'
+    | '/services/strategy-policy-business-transformation'
+    | '/services/sustainability-esg-risk-advisory'
+    | '/services/training-capacity-building-innovation-advisory'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +163,11 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/crg-admin'
+    | '/services/international-development-monitoring-stakeholder-solutions'
+    | '/services/research-market-intelligence'
+    | '/services/strategy-policy-business-transformation'
+    | '/services/sustainability-esg-risk-advisory'
+    | '/services/training-capacity-building-innovation-advisory'
   id:
     | '__root__'
     | '/'
@@ -116,6 +178,11 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/_authenticated/crg-admin'
+    | '/services/international-development-monitoring-stakeholder-solutions'
+    | '/services/research-market-intelligence'
+    | '/services/strategy-policy-business-transformation'
+    | '/services/sustainability-esg-risk-advisory'
+    | '/services/training-capacity-building-innovation-advisory'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -126,6 +193,11 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResourcesRoute: typeof ResourcesRoute
   StaffAccessCrgRoute: typeof StaffAccessCrgRoute
+  ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute: typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
+  ServicesResearchMarketIntelligenceRoute: typeof ServicesResearchMarketIntelligenceRoute
+  ServicesStrategyPolicyBusinessTransformationRoute: typeof ServicesStrategyPolicyBusinessTransformationRoute
+  ServicesSustainabilityEsgRiskAdvisoryRoute: typeof ServicesSustainabilityEsgRiskAdvisoryRoute
+  ServicesTrainingCapacityBuildingInnovationAdvisoryRoute: typeof ServicesTrainingCapacityBuildingInnovationAdvisoryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -186,6 +258,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrgAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/services/international-development-monitoring-stakeholder-solutions': {
+      id: '/services/international-development-monitoring-stakeholder-solutions'
+      path: '/services/international-development-monitoring-stakeholder-solutions'
+      fullPath: '/services/international-development-monitoring-stakeholder-solutions'
+      preLoaderRoute: typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/research-market-intelligence': {
+      id: '/services/research-market-intelligence'
+      path: '/services/research-market-intelligence'
+      fullPath: '/services/research-market-intelligence'
+      preLoaderRoute: typeof ServicesResearchMarketIntelligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/strategy-policy-business-transformation': {
+      id: '/services/strategy-policy-business-transformation'
+      path: '/services/strategy-policy-business-transformation'
+      fullPath: '/services/strategy-policy-business-transformation'
+      preLoaderRoute: typeof ServicesStrategyPolicyBusinessTransformationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/sustainability-esg-risk-advisory': {
+      id: '/services/sustainability-esg-risk-advisory'
+      path: '/services/sustainability-esg-risk-advisory'
+      fullPath: '/services/sustainability-esg-risk-advisory'
+      preLoaderRoute: typeof ServicesSustainabilityEsgRiskAdvisoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/training-capacity-building-innovation-advisory': {
+      id: '/services/training-capacity-building-innovation-advisory'
+      path: '/services/training-capacity-building-innovation-advisory'
+      fullPath: '/services/training-capacity-building-innovation-advisory'
+      preLoaderRoute: typeof ServicesTrainingCapacityBuildingInnovationAdvisoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -208,6 +315,16 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResourcesRoute: ResourcesRoute,
   StaffAccessCrgRoute: StaffAccessCrgRoute,
+  ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute:
+    ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute,
+  ServicesResearchMarketIntelligenceRoute:
+    ServicesResearchMarketIntelligenceRoute,
+  ServicesStrategyPolicyBusinessTransformationRoute:
+    ServicesStrategyPolicyBusinessTransformationRoute,
+  ServicesSustainabilityEsgRiskAdvisoryRoute:
+    ServicesSustainabilityEsgRiskAdvisoryRoute,
+  ServicesTrainingCapacityBuildingInnovationAdvisoryRoute:
+    ServicesTrainingCapacityBuildingInnovationAdvisoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -224,13 +224,13 @@ export function HeroSlideshow() {
             </a>
             <a
               href="#about"
-              className="rounded-full border-2 border-primary-foreground/70 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground hover:text-primary sm:px-7"
+              className="btn-glass-dark rounded-full px-6 py-3 text-sm font-semibold text-primary-foreground sm:px-7"
             >
               Our History
             </a>
             <Link
               to="/news"
-              className="animate-glow inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-primary transition-transform duration-300 hover:-translate-y-0.5 sm:px-7"
+              className="animate-glow inline-flex items-center gap-2 rounded-full bg-accent-gradient px-6 py-3 text-sm font-semibold text-accent-foreground transition-transform duration-300 hover:-translate-y-0.5 sm:px-7"
             >
               <Newspaper className="size-4" />
               Latest News & Updates

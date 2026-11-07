@@ -56,7 +56,7 @@ export function Navbar() {
         "fixed inset-x-0 top-0 z-50 transition-all duration-500",
         isTransparent
           ? "bg-transparent py-1"
-          : "bg-background/95 shadow-card backdrop-blur-sm border-b border-border/40 py-0.5",
+          : "glass border-b border-white/40 py-0.5",
       )}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 lg:px-8">
