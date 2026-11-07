@@ -78,7 +78,7 @@ export function HeroSlideshow() {
         title: article.title,
         text: article.summary ?? article.content ?? "",
       }));
-    return newsSlides.length > 0 ? newsSlides : DEFAULT_SLIDES;
+    return [...newsSlides, ...DEFAULT_SLIDES];
   }, [news]);
 
   const go = useCallback(

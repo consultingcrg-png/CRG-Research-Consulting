@@ -256,21 +256,24 @@ const SERVICES: { title: string; description: string; image?: string; icon?: Luc
   },
 ];
 
-const PILLARS = [
+const PILLARS: { icon: LucideIcon; title: string; text: string; image?: string }[] = [
   {
     icon: Microscope,
     title: "Rigorous Analysis",
     text: "High-quality research methods tailored to complex sector demands.",
+    image: "/images/rigorous-analysis.jpg",
   },
   {
     icon: Lightbulb,
     title: "Strategic Insights",
     text: "Translating field data into actionable governance and market policies.",
+    image: "/images/strategic-insights.jpg",
   },
   {
     icon: HandshakeIcon,
     title: "Ethical Commitment",
     text: "Promoting sustainable development and institutional transparency.",
+    image: "/images/ethical-commitments.jpg",
   },
 ];
 
@@ -380,10 +383,14 @@ function Index() {
       {/* Animated rotating globe background */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden"
+        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden [contain:layout_paint]"
       >
         <div className="aspect-square w-[150vmin] shrink-0">
-          <svg viewBox="0 0 200 200" className="h-full w-full opacity-15" fill="none">
+          <svg
+            viewBox="0 0 200 200"
+            className="animate-globe-spin h-full w-full transform-gpu opacity-15 will-change-transform"
+            fill="none"
+          >
             <defs>
               <radialGradient id="crg-globe-grad" cx="35%" cy="30%" r="80%">
                 <stop offset="0%" stopColor="var(--color-accent)" />
@@ -401,14 +408,6 @@ function Index() {
               strokeWidth="1.5"
             />
             <g stroke="var(--color-accent)" strokeLinecap="round" strokeOpacity="0.8">
-              <animateTransform
-                attributeName="transform"
-                type="rotate"
-                from="0 100 100"
-                to="360 100 100"
-                dur="90s"
-                repeatCount="indefinite"
-              />
               <path d="M3 100 H197" strokeWidth="0.9" />
               <ellipse cx="100" cy="100" rx="97" ry="30" strokeWidth="0.7" />
               <ellipse cx="100" cy="100" rx="97" ry="62" strokeWidth="0.7" />
@@ -460,13 +459,49 @@ function Index() {
             <div className="grid gap-4">
               {PILLARS.map((pillar, i) => (
                 <Reveal key={pillar.title} delay={120 + i * 120}>
-                  <div className="hover-lift flex gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent-gradient text-accent-foreground">
-                      <pillar.icon className="size-6" />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-bold">{pillar.title}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{pillar.text}</p>
+                  <div
+                    className={
+                      pillar.image
+                        ? "hover-lift group relative flex min-h-44 items-end overflow-hidden rounded-xl border-2 border-primary shadow-card"
+                        : "hover-lift flex gap-4 rounded-xl border-2 border-primary bg-card p-6 shadow-card"
+                    }
+                  >
+                    {pillar.image && (
+                      <>
+                        <img
+                          src={pillar.image}
+                          alt={pillar.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+                      </>
+                    )}
+                    {!pillar.image && (
+                      <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent-gradient text-accent-foreground">
+                        <pillar.icon className="size-6" />
+                      </span>
+                    )}
+                    <div className={pillar.image ? "relative z-10 min-w-0 p-6" : "min-w-0"}>
+                      <h3
+                        className={
+                          pillar.image
+                            ? "text-base font-bold text-primary-foreground"
+                            : "text-base font-bold"
+                        }
+                      >
+                        {pillar.title}
+                      </h3>
+                      <p
+                        className={
+                          pillar.image
+                            ? "mt-1 text-sm text-primary-foreground/85"
+                            : "mt-1 text-sm text-muted-foreground"
+                        }
+                      >
+                        {pillar.text}
+                      </p>
                     </div>
                   </div>
                 </Reveal>
