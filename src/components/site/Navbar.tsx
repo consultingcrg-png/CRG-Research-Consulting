@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,13 +31,26 @@ const NAV_ITEMS = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
   const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
   const location = useLocation();
 
   const isHome = location.pathname === "/" || location.pathname === "";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+
+      const delta = y - lastY.current;
+      if (y < 80) {
+        setHidden(false);
+      } else if (Math.abs(delta) > 4) {
+        setHidden(delta > 0);
+      }
+      lastY.current = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -49,11 +62,13 @@ export function Navbar() {
   }, [location.pathname]);
 
   const isTransparent = isHome && !scrolled;
+  const isHidden = hidden && !open;
 
   return (
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+        isHidden ? "-translate-y-full" : "translate-y-0",
         isTransparent
           ? "bg-transparent py-1"
           : "glass border-b border-white/40 py-0.5",
