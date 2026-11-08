@@ -780,16 +780,28 @@ function Index() {
               </p>
 
               <div className="mt-8 space-y-4">
-                {[
-                  { icon: Phone, label: "Phone", value: "+264 81 3288657" },
-                  { icon: Mail, label: "Email", value: "info@crg-research.com" },
-                  { icon: MapPin, label: "Location", value: MAP_QUERY },
-                  {
-                    icon: Briefcase,
-                    label: "Industry",
-                    value: "Research & Strategic Consulting Services",
-                  },
-                ].map((item, i) => (
+                {(
+                  [
+                    {
+                      icon: Phone,
+                      label: "Phone",
+                      value: "+264 81 3288657",
+                      href: "tel:+264813288657",
+                    },
+                    {
+                      icon: Mail,
+                      label: "Email",
+                      value: "info@crg-research.com",
+                      href: "mailto:info@crg-research.com",
+                    },
+                    { icon: MapPin, label: "Location", value: MAP_QUERY },
+                    {
+                      icon: Briefcase,
+                      label: "Industry",
+                      value: "Research & Strategic Consulting Services",
+                    },
+                  ] as { icon: LucideIcon; label: string; value: string; href?: string }[]
+                ).map((item, i) => (
                   <Reveal key={item.label} delay={i * 100}>
                     <div className="flex items-start gap-4 rounded-xl border-2 border-primary bg-card p-5 shadow-card">
                       <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-accent">
@@ -797,7 +809,16 @@ function Index() {
                       </span>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-primary">{item.label}</p>
-                        <p className="text-sm text-muted-foreground">{item.value}</p>
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-accent hover:underline"
+                          >
+                            {item.value}
+                          </a>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">{item.value}</p>
+                        )}
                       </div>
                     </div>
                   </Reveal>
