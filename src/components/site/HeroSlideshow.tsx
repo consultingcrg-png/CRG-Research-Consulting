@@ -212,7 +212,6 @@ export function HeroSlideshow() {
                   draggable={false}
                   className={cn(
                     "size-full object-cover object-center transform-gpu",
-                    slide.url === "/images/image-4.jpeg" && "object-contain",
                     isCurrent && "animate-slow-zoom",
                   )}
                 />
