@@ -33,7 +33,7 @@ export function FeaturedVideos() {
                   preload="metadata"
                   poster={video.poster}
                   aria-label={video.title}
-                  className="aspect-video w-full bg-black object-cover"
+                  className="aspect-video w-full bg-black object-contain"
                 >
                   <source src={video.src} type="video/mp4" />
                   Your browser does not support the video tag.

@@ -13,12 +13,12 @@ export type SiteVideo = {
  */
 export const SITE_VIDEOS: SiteVideo[] = [
   {
-    src: "/videos/crg-part-2.mp4",
-    poster: "/images/image-8.jpeg",
-    kicker: "INSIDE CRG",
-    title: "Research in Action",
+    src: "/videos/crg-at-summit.mp4",
+    poster: "/images/crg-at-summit-poster.jpg",
+    kicker: "SUMMIT HIGHLIGHTS",
+    title: "CRG at Summit",
     description:
-      "A look at how CRG teams combine fieldwork, analysis and stakeholder engagement to turn evidence into impact.",
-    durationLabel: "0:21",
+      "Highlights from CRG at the summit — the conversations, insights and partnerships shaping our work across the region.",
+    durationLabel: "2:02",
   },
 ];
