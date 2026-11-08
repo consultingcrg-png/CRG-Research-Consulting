@@ -189,35 +189,23 @@ export function HeroSlideshow() {
           >
             {isPrimed &&
               (slide.video ? (
-                <div className="absolute inset-0 overflow-hidden bg-black">
-                  {/* Blurred fill so the full vertical frame fits without cropping anyone out */}
-                  <img
-                    src={slide.url}
-                    alt=""
-                    aria-hidden="true"
-                    draggable={false}
-                    className="absolute inset-0 size-full scale-110 object-cover object-center opacity-60 blur-2xl"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center lg:justify-end lg:pr-[6%]">
-                    <HeroVideo
-                      src={slide.video}
-                      poster={slide.url}
-                      active={isCurrent}
-                      muted={muted}
-                      onMutedChange={setMuted}
-                      onDuration={(duration) => {
-                        const src = slide.video;
-                        if (!src) return;
-                        setVideoDurations((prev) =>
-                          prev[src] === duration ? prev : { ...prev, [src]: duration },
-                        );
-                      }}
-                      onEnded={() => {
-                        if (isCurrent) go(index + 1);
-                      }}
-                    />
-                  </div>
-                </div>
+                <HeroVideo
+                  src={slide.video}
+                  poster={slide.url}
+                  active={isCurrent}
+                  muted={muted}
+                  onMutedChange={setMuted}
+                  onDuration={(duration) => {
+                    const src = slide.video;
+                    if (!src) return;
+                    setVideoDurations((prev) =>
+                      prev[src] === duration ? prev : { ...prev, [src]: duration },
+                    );
+                  }}
+                  onEnded={() => {
+                    if (isCurrent) go(index + 1);
+                  }}
+                />
               ) : (
                 <img
                   src={slide.url}
@@ -407,7 +395,7 @@ function HeroVideo({
         }
       }}
       onEnded={onEnded}
-      className="h-full w-auto max-w-full object-contain object-center transform-gpu"
+      className="size-full object-cover object-center transform-gpu md:object-[50%_42%]"
     />
   );
 }
