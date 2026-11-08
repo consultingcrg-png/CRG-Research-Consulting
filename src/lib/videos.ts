@@ -19,6 +19,6 @@ export const SITE_VIDEOS: SiteVideo[] = [
     title: "CRG at Summit",
     description:
       "Highlights from CRG at the summit — the conversations, insights and partnerships shaping our work across the region.",
-    durationLabel: "2:02",
+    durationLabel: "1:59",
   },
 ];
