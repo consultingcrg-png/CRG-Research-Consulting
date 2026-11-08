@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SITE_VIDEOS } from "@/lib/videos";
 import { cn } from "@/lib/utils";
 
 type Slide = {
@@ -11,6 +12,7 @@ type Slide = {
   kicker: string;
   title: string;
   text: string;
+  video?: string;
 };
 
 type NewsArticle = {
@@ -60,6 +62,7 @@ export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
   // Slides that have been loaded or primed for preloading
   const [loaded, setLoaded] = useState<number[]>([0, 1]);
+  const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -68,7 +71,15 @@ export function HeroSlideshow() {
     queryFn: fetchPublishedNews,
   });
 
-  const slides = useMemo(() => {
+  const slides = useMemo<Slide[]>(() => {
+    const videoSlides = SITE_VIDEOS.map((video) => ({
+      url: video.poster,
+      alt: video.title,
+      kicker: video.kicker,
+      title: video.title,
+      text: video.description,
+      video: video.src,
+    }));
     const newsSlides = (news ?? [])
       .filter((article) => article.image_urls.length > 0)
       .map((article) => ({
@@ -78,7 +89,7 @@ export function HeroSlideshow() {
         title: article.title,
         text: article.summary ?? article.content ?? "",
       }));
-    return [...newsSlides, ...DEFAULT_SLIDES];
+    return [...videoSlides, ...newsSlides, ...DEFAULT_SLIDES];
   }, [news]);
 
   const go = useCallback(
@@ -110,14 +121,18 @@ export function HeroSlideshow() {
     if (index >= slides.length) setIndex(0);
   }, [index, slides.length]);
 
-  // Continuous 8-second loop that never stops. Restarted cleanly on every
-  // index change so the cadence stays consistent across mobile and desktop.
+  const active = useMemo(() => slides[index] ?? slides[0]!, [index, slides]);
+  const activeDuration = active.video ? (videoDurations[active.video] ?? 120000) : DURATION;
+
+  // Continuous loop that never stops. Image slides use 8 seconds; video slides
+  // stay until the video finishes. Restarted cleanly on every index change so
+  // the cadence stays consistent across mobile and desktop.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       go(index + 1);
-    }, DURATION);
+    }, activeDuration);
     return () => window.clearTimeout(timer);
-  }, [index, go]);
+  }, [index, go, activeDuration]);
 
   // Keyboard navigation for accessibility
   useEffect(() => {
@@ -128,8 +143,6 @@ export function HeroSlideshow() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [index, go]);
-
-  const active = useMemo(() => slides[index] ?? slides[0]!, [index, slides]);
 
   return (
     <section
@@ -165,28 +178,45 @@ export function HeroSlideshow() {
 
         return (
           <div
-            key={slide.url}
+            key={`${slide.url}-${i}`}
             aria-hidden={!isCurrent}
             className={cn(
               "absolute inset-0 transition-opacity duration-[1200ms] ease-in-out will-change-[opacity]",
               isCurrent ? "opacity-100 z-0" : "opacity-0 -z-10 pointer-events-none",
             )}
           >
-            {isPrimed && (
-              <img
-                src={slide.url}
-                alt={slide.alt}
-                loading={i === 0 ? "eager" : "lazy"}
-                decoding="async"
-                fetchPriority={i === 0 ? "high" : "low"}
-                draggable={false}
-                className={cn(
-                  "size-full object-cover object-center transform-gpu",
-                  i === 1 && "object-contain",
-                  isCurrent && "animate-slow-zoom",
-                )}
-              />
-            )}
+            {isPrimed &&
+              (slide.video ? (
+                <HeroVideo
+                  src={slide.video}
+                  poster={slide.url}
+                  active={isCurrent}
+                  onDuration={(duration) => {
+                    const src = slide.video;
+                    if (!src) return;
+                    setVideoDurations((prev) =>
+                      prev[src] === duration ? prev : { ...prev, [src]: duration },
+                    );
+                  }}
+                  onEnded={() => {
+                    if (isCurrent) go(index + 1);
+                  }}
+                />
+              ) : (
+                <img
+                  src={slide.url}
+                  alt={slide.alt}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === 0 ? "high" : "low"}
+                  draggable={false}
+                  className={cn(
+                    "size-full object-cover object-center transform-gpu",
+                    slide.url === "/images/image-4.jpeg" && "object-contain",
+                    isCurrent && "animate-slow-zoom",
+                  )}
+                />
+              ))}
             <div className="absolute inset-0 bg-hero-gradient" />
           </div>
         );
@@ -262,7 +292,7 @@ export function HeroSlideshow() {
         <div className="flex flex-1 items-center gap-2 sm:gap-2.5">
           {slides.map((slide, i) => (
             <button
-              key={slide.url}
+              key={`${slide.url}-${i}`}
               type="button"
               aria-label={`Go to slide ${i + 1}`}
               aria-current={i === index}
@@ -276,12 +306,62 @@ export function HeroSlideshow() {
                   i === index && "animate-bar",
                   i !== index && "scale-x-0",
                 )}
-                style={{ animationDuration: `${DURATION}ms` }}
+                style={{ animationDuration: `${i === index ? activeDuration : DURATION}ms` }}
               />
             </button>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function HeroVideo({
+  src,
+  poster,
+  active,
+  onDuration,
+  onEnded,
+}: {
+  src: string;
+  poster: string;
+  active: boolean;
+  onDuration: (durationMs: number) => void;
+  onEnded: () => void;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+
+    if (active) {
+      video.currentTime = 0;
+      void video.play().catch(() => {
+        // Autoplay can be blocked; the poster remains visible.
+      });
+    } else {
+      video.pause();
+    }
+  }, [active]);
+
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      muted
+      playsInline
+      preload="metadata"
+      aria-hidden="true"
+      onLoadedMetadata={(e) => {
+        const duration = e.currentTarget.duration;
+        if (Number.isFinite(duration) && duration > 0) {
+          onDuration(Math.round(duration * 1000));
+        }
+      }}
+      onEnded={onEnded}
+      className="size-full object-cover object-center transform-gpu"
+    />
   );
 }

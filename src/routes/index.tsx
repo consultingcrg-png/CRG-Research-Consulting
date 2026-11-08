@@ -22,6 +22,7 @@ import { HeroSlideshow } from "@/components/site/HeroSlideshow";
 import { RecentWork } from "@/components/site/RecentWork";
 import { RecentResources } from "@/components/site/RecentResources";
 import { RecentNews } from "@/components/site/RecentNews";
+import { FeaturedVideos } from "@/components/site/FeaturedVideos";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import LocationsMap from "@/components/site/LocationsMap";
@@ -563,6 +564,8 @@ function Index() {
             </div>
           </div>
         </section>
+
+        <FeaturedVideos />
 
         {/* Services */}
         <section id="services" className="scroll-mt-24 py-20 lg:py-28">
