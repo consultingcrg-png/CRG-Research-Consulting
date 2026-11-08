@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
+import { ChevronLeft, ChevronRight, Newspaper, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SITE_VIDEOS } from "@/lib/videos";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,8 @@ export function HeroSlideshow() {
   // Slides that have been loaded or primed for preloading
   const [loaded, setLoaded] = useState<number[]>([0, 1]);
   const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
+  // Hero video starts muted so browsers allow autoplay; the sound button unmutes it.
+  const [muted, setMuted] = useState(true);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -191,6 +193,8 @@ export function HeroSlideshow() {
                   src={slide.video}
                   poster={slide.url}
                   active={isCurrent}
+                  muted={muted}
+                  onMutedChange={setMuted}
                   onDuration={(duration) => {
                     const src = slide.video;
                     if (!src) return;
@@ -269,6 +273,19 @@ export function HeroSlideshow() {
         </div>
       </div>
 
+      {/* Sound toggle for video slides (starts muted for autoplay) */}
+      {active.video && (
+        <button
+          type="button"
+          onClick={() => setMuted((value) => !value)}
+          aria-label={muted ? "Unmute video" : "Mute video"}
+          aria-pressed={!muted}
+          className="btn-glass-dark absolute top-24 right-4 z-30 grid size-11 place-items-center rounded-full text-primary-foreground sm:right-6 lg:top-28 touch-manipulation"
+        >
+          {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+        </button>
+      )}
+
       {/* Desktop Navigation Arrows */}
       <button
         type="button"
@@ -320,37 +337,54 @@ function HeroVideo({
   src,
   poster,
   active,
+  muted,
+  onMutedChange,
   onDuration,
   onEnded,
 }: {
   src: string;
   poster: string;
   active: boolean;
+  muted: boolean;
+  onMutedChange: (muted: boolean) => void;
   onDuration: (durationMs: number) => void;
   onEnded: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const wasActive = useRef(false);
 
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
 
+    video.muted = muted;
+    video.volume = 1;
+
     if (active) {
-      video.currentTime = 0;
+      if (!wasActive.current) video.currentTime = 0;
       void video.play().catch(() => {
-        // Autoplay can be blocked; the poster remains visible.
+        // Unmuted autoplay can be blocked; fall back to muted playback.
+        if (!video.muted) {
+          video.muted = true;
+          onMutedChange(true);
+          void video.play().catch(() => {
+            // Autoplay fully blocked; the poster remains visible.
+          });
+        }
       });
     } else {
       video.pause();
     }
-  }, [active]);
+
+    wasActive.current = active;
+  }, [active, muted, onMutedChange]);
 
   return (
     <video
       ref={ref}
       src={src}
       poster={poster}
-      muted
+      muted={muted}
       playsInline
       preload="metadata"
       aria-hidden="true"
