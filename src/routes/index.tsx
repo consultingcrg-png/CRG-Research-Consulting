@@ -13,7 +13,6 @@ Bolt,
   MapPin,
   Microscope,
   Phone,
-  RotateCw,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -682,13 +681,10 @@ function Index() {
                                 decoding="async"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4">
+                              <div className="absolute inset-x-0 bottom-0 p-4">
                                 <h3 className="text-sm font-bold text-primary-foreground sm:text-base">
                                   {sector.title}
                                 </h3>
-                                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/20 text-primary-foreground backdrop-blur-sm">
-                                  <RotateCw className="size-3.5" />
-                                </span>
                               </div>
                             </>
                           ) : (
@@ -697,7 +693,6 @@ function Index() {
                                 {sector.icon && <sector.icon className="size-6" />}
                               </span>
                               <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
-                              <RotateCw className="mt-2 size-3.5 text-accent" />
                             </div>
                           )}
                         </div>
