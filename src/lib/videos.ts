@@ -13,12 +13,12 @@ export type SiteVideo = {
  */
 export const SITE_VIDEOS: SiteVideo[] = [
   {
-    src: "/videos/crg-at-summit.mp4",
-    poster: "/images/crg-at-summit-poster.jpg",
+    src: "/videos/crg-reel.mp4",
+    poster: "/images/crg-reel-poster.jpg",
     kicker: "IAEOGS 2026",
     title: "CRG at IAEOGS (5th International African Oil & Gas Summit) 2026",
     description:
       "Highlights from CRG at the 5th International African Oil & Gas Summit (IAEOGS) 2026 — the conversations, insights and partnerships shaping our work across the region.",
-    durationLabel: "1:59",
+    durationLabel: "1:06",
   },
 ];
