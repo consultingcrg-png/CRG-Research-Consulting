@@ -283,15 +283,43 @@ const PILLARS: { icon: LucideIcon; title: string; text: string; image?: string }
   },
 ];
 
-const SECTORS: { title: string; image?: string; icon?: LucideIcon }[] = [
-  { image: "/images/land-natural-resources.jpg", title: "Land, Natural resources and mining" },
-  { image: "/images/energy.jpg", title: "Energy" },
-  { image: "/images/sect-3.jpg", title: "Agriculture & Agri business" },
-  { image: "/images/sect-4.jpg", title: "Water resources management" },
-  { image: "/images/sect-5.jpg", title: "Climate change, biodiversity and health" },
-  { image: "/images/international-development.jpg", title: "Digital information and e-environmental" },
-  { image: "/images/sect-7.jpeg", title: "Policy & economic research" },
-  { image: "/images/sect-8.jpeg", title: "Capacity development and training" },
+const SECTORS: { title: string; image?: string; icon?: LucideIcon; href: string }[] = [
+  {
+    image: "/images/land-natural-resources.jpg",
+    title: "Land, Natural resources and mining",
+    href: "/sectors/land-natural-resources-mining",
+  },
+  { image: "/images/energy.jpg", title: "Energy", href: "/sectors/energy" },
+  {
+    image: "/images/sect-3.jpg",
+    title: "Agriculture & Agri business",
+    href: "/sectors/agriculture-agribusiness",
+  },
+  {
+    image: "/images/sect-4.jpg",
+    title: "Water resources management",
+    href: "/sectors/water-resources-management",
+  },
+  {
+    image: "/images/sect-5.jpg",
+    title: "Climate change, biodiversity and health",
+    href: "/sectors/climate-change-biodiversity-health",
+  },
+  {
+    image: "/images/international-development.jpg",
+    title: "Digital information and e-environmental",
+    href: "/sectors/digital-information-e-environmental",
+  },
+  {
+    image: "/images/sect-7.jpeg",
+    title: "Policy & economic research",
+    href: "/sectors/policy-economic-research",
+  },
+  {
+    image: "/images/sect-8.jpeg",
+    title: "Capacity development and training",
+    href: "/sectors/capacity-development-training",
+  },
 ];
 
 const HUBS = [
@@ -597,36 +625,47 @@ function Index() {
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {SECTORS.map((sector, i) => (
                 <Reveal key={sector.title} delay={i * 70}>
-                  <div
-                    className={
-                      sector.image
-                        ? "hover-lift group relative h-full min-h-36 overflow-hidden rounded-xl border-2 border-primary shadow-card"
-                        : "hover-lift group h-full min-h-36 rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card"
-                    }
-                  >
-                    {sector.image ? (
-                      <>
-                        <img
-                          src={sector.image}
-                          alt={sector.title}
-                          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                        <h3 className="absolute inset-x-0 bottom-0 p-4 text-sm font-bold text-primary-foreground sm:text-base">
-                          {sector.title}
-                        </h3>
-                      </>
-                    ) : (
-                      <>
-                        <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
-                          {sector.icon && <sector.icon className="size-6" />}
-                        </span>
-                        <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
-                      </>
-                    )}
-                  </div>
+                  <a href={sector.href} className="block h-full">
+                    <div
+                      className={
+                        sector.image
+                          ? "hover-lift group relative h-full min-h-36 overflow-hidden rounded-xl border-2 border-primary shadow-card"
+                          : "hover-lift group h-full min-h-36 rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card"
+                      }
+                    >
+                      {sector.image ? (
+                        <>
+                          <img
+                            src={sector.image}
+                            alt={sector.title}
+                            className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4">
+                            <h3 className="text-sm font-bold text-primary-foreground sm:text-base">
+                              {sector.title}
+                            </h3>
+                            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/20 text-primary-foreground backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1">
+                              <ArrowRight className="size-4" />
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
+                            {sector.icon && <sector.icon className="size-6" />}
+                          </span>
+                          <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
+                          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                            Learn more
+                            <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </a>
                 </Reveal>
               ))}
             </div>

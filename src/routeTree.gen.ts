@@ -17,6 +17,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as StaffAccessCrgRouteImport } from './routes/staff-access-crg'
 import { Route as AuthenticatedCrgAdminRouteImport } from './routes/_authenticated/crg-admin'
+import { Route as SectorsSlugRouteImport } from './routes/sectors.$slug'
 import { Route as ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRouteImport } from './routes/services.international-development-monitoring-stakeholder-solutions'
 import { Route as ServicesResearchMarketIntelligenceRouteImport } from './routes/services.research-market-intelligence'
 import { Route as ServicesStrategyPolicyBusinessTransformationRouteImport } from './routes/services.strategy-policy-business-transformation'
@@ -62,6 +63,11 @@ const AuthenticatedCrgAdminRoute = AuthenticatedCrgAdminRouteImport.update({
   path: '/crg-admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const SectorsSlugRoute = SectorsSlugRouteImport.update({
+  id: '/sectors/$slug',
+  path: '/sectors/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute =
   ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRouteImport.update(
     {
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/sectors/$slug': typeof SectorsSlugRoute
   '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
   '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
   '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/sectors/$slug': typeof SectorsSlugRoute
   '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
   '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
   '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRoute
   '/staff-access-crg': typeof StaffAccessCrgRoute
   '/_authenticated/crg-admin': typeof AuthenticatedCrgAdminRoute
+  '/sectors/$slug': typeof SectorsSlugRoute
   '/services/international-development-monitoring-stakeholder-solutions': typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
   '/services/research-market-intelligence': typeof ServicesResearchMarketIntelligenceRoute
   '/services/strategy-policy-business-transformation': typeof ServicesStrategyPolicyBusinessTransformationRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/crg-admin'
+    | '/sectors/$slug'
     | '/services/international-development-monitoring-stakeholder-solutions'
     | '/services/research-market-intelligence'
     | '/services/strategy-policy-business-transformation'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/crg-admin'
+    | '/sectors/$slug'
     | '/services/international-development-monitoring-stakeholder-solutions'
     | '/services/research-market-intelligence'
     | '/services/strategy-policy-business-transformation'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/resources'
     | '/staff-access-crg'
     | '/_authenticated/crg-admin'
+    | '/sectors/$slug'
     | '/services/international-development-monitoring-stakeholder-solutions'
     | '/services/research-market-intelligence'
     | '/services/strategy-policy-business-transformation'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResourcesRoute: typeof ResourcesRoute
   StaffAccessCrgRoute: typeof StaffAccessCrgRoute
+  SectorsSlugRoute: typeof SectorsSlugRoute
   ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute: typeof ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute
   ServicesResearchMarketIntelligenceRoute: typeof ServicesResearchMarketIntelligenceRoute
   ServicesStrategyPolicyBusinessTransformationRoute: typeof ServicesStrategyPolicyBusinessTransformationRoute
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrgAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/sectors/$slug': {
+      id: '/sectors/$slug'
+      path: '/sectors/$slug'
+      fullPath: '/sectors/$slug'
+      preLoaderRoute: typeof SectorsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/international-development-monitoring-stakeholder-solutions': {
       id: '/services/international-development-monitoring-stakeholder-solutions'
       path: '/services/international-development-monitoring-stakeholder-solutions'
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResourcesRoute: ResourcesRoute,
   StaffAccessCrgRoute: StaffAccessCrgRoute,
+  SectorsSlugRoute: SectorsSlugRoute,
   ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute:
     ServicesInternationalDevelopmentMonitoringStakeholderSolutionsRoute,
   ServicesResearchMarketIntelligenceRoute:
