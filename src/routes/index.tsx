@@ -16,7 +16,6 @@ Bolt,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { playFlipSound } from "@/lib/sound";
 import { Navbar } from "@/components/site/Navbar";
 import { HeroSlideshow } from "@/components/site/HeroSlideshow";
 import { RecentWork } from "@/components/site/RecentWork";
@@ -268,19 +267,16 @@ const PILLARS: { icon: LucideIcon; title: string; text: string; image?: string }
     icon: Microscope,
     title: "Rigorous Analysis",
     text: "High-quality research methods tailored to complex sector demands.",
-    image: "/images/rigorous-analysis.jpg",
   },
   {
     icon: Lightbulb,
     title: "Strategic Insights",
     text: "Translating field data into actionable governance and market policies.",
-    image: "/images/strategic-insights.jpg",
   },
   {
     icon: HandshakeIcon,
     title: "Ethical Commitment",
     text: "Promoting sustainable development and institutional transparency.",
-    image: "/images/ethical-commitments.jpg",
   },
 ];
 
@@ -374,7 +370,6 @@ const MAP_QUERY = "6 Luther Street, The Village, Eros, Windhoek, Namibia";
 function Index() {
   const [submitting, setSubmitting] = useState(false);
   const [activeHub, setActiveHub] = useState<string | null>(null);
-  const [flippedSector, setFlippedSector] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -643,84 +638,51 @@ function Index() {
             </Reveal>
 
             <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {SECTORS.map((sector, i) => {
-                const isFlipped = flippedSector === sector.title;
-                return (
-                  <Reveal key={sector.title} delay={i * 70}>
-                    <div className="h-full [perspective:1200px]">
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${isFlipped ? "Hide" : "Show"} details for ${sector.title}`}
-                        aria-pressed={isFlipped}
-                        onClick={() => {
-                          setFlippedSector(isFlipped ? null : sector.title);
-                          playFlipSound();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.target !== e.currentTarget) return;
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setFlippedSector(isFlipped ? null : sector.title);
-                            playFlipSound();
-                          }
-                        }}
-                        className={`group relative h-56 w-full cursor-pointer rounded-xl transition-transform duration-700 [transform-style:preserve-3d] ${
-                          isFlipped ? "[transform:rotateY(180deg)]" : ""
-                        }`}
-                      >
-                        {/* Front face */}
-                        <div className="absolute inset-0 overflow-hidden rounded-xl border-2 border-primary shadow-card [backface-visibility:hidden]">
-                          {sector.image ? (
-                            <>
-                              <img
-                                src={sector.image}
-                                alt={sector.title}
-                                className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                              <div className="absolute inset-x-0 bottom-0 p-4">
-                                <h3 className="text-sm font-bold text-primary-foreground sm:text-base">
-                                  {sector.title}
-                                </h3>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex h-full flex-col items-center justify-center p-5 text-center">
-                              <span className="grid size-14 place-items-center rounded-full bg-secondary text-primary">
-                                {sector.icon && <sector.icon className="size-6" />}
-                              </span>
-                              <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Back face */}
-                        <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-xl border-2 border-primary bg-card p-4 text-left shadow-card [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                          <div>
-                            <h3 className="text-sm font-bold text-primary sm:text-base">
+              {SECTORS.map((sector, i) => (
+                <Reveal key={sector.title} delay={i * 70}>
+                  <a href={sector.href} className="block h-full">
+                    <div
+                      className={
+                        sector.image
+                          ? "hover-lift group relative h-full min-h-36 overflow-hidden rounded-xl border-2 border-primary shadow-card"
+                          : "hover-lift group h-full min-h-36 rounded-xl border-2 border-primary bg-card p-6 text-center shadow-card"
+                      }
+                    >
+                      {sector.image ? (
+                        <>
+                          <img
+                            src={sector.image}
+                            alt={sector.title}
+                            className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4">
+                            <h3 className="text-sm font-bold text-primary-foreground sm:text-base">
                               {sector.title}
                             </h3>
-                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                              {sector.blurb}
-                            </p>
+                            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/20 text-primary-foreground backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1">
+                              <ArrowRight className="size-4" />
+                            </span>
                           </div>
-                          <a
-                            href={sector.href}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent underline-offset-2 hover:underline"
-                          >
-                            Explore expertise
-                            <ArrowRight className="size-3.5" />
-                          </a>
-                        </div>
-                      </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary transition-colors duration-300 group-hover:bg-accent-gradient group-hover:text-accent-foreground">
+                            {sector.icon && <sector.icon className="size-6" />}
+                          </span>
+                          <h3 className="mt-4 text-sm font-bold sm:text-base">{sector.title}</h3>
+                          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                            Learn more
+                            <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                          </span>
+                        </>
+                      )}
                     </div>
-                  </Reveal>
-                );
-              })}
+                  </a>
+                </Reveal>
+              ))}
             </div>
           </div>
         </section>

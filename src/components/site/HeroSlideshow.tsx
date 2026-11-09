@@ -3,16 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SITE_VIDEOS } from "@/lib/videos";
 import { cn } from "@/lib/utils";
 
 type Slide = {
-  url: string;
+  url?: string;
   alt: string;
   kicker: string;
   title: string;
   text: string;
-  video?: string;
 };
 
 type NewsArticle = {
@@ -25,22 +23,12 @@ type NewsArticle = {
   image_urls: string[];
 };
 
-const DEFAULT_SLIDES: Slide[] = [
-  {
-    url: "/images/image-8.jpeg",
-    alt: "CRG delegates at the International Federation of Surveyors sustainable development goals exhibition",
-    kicker: "GLOBAL ENGAGEMENT",
-    title: "Transformative Research & Strategic Consulting",
-    text: "Evidence-based solutions across global industries, unlocking sustainable growth and measurable impact.",
-  },
-  {
-    url: "/images/image-4.jpeg",
-    alt: "CRG field research team with community stakeholders",
-    kicker: "FIELDWORK",
-    title: "Grounded in Communities We Serve",
-    text: "Primary data collection and stakeholder engagement across Namibia, Kenya, Nigeria and beyond.",
-  },
-];
+const FALLBACK_SLIDE: Slide = {
+  alt: "CRG Research & Consulting",
+  kicker: "GLOBAL ENGAGEMENT",
+  title: "Transformative Research & Strategic Consulting",
+  text: "Evidence-based solutions across global industries, unlocking sustainable growth and measurable impact.",
+};
 
 async function fetchPublishedNews(): Promise<NewsArticle[]> {
   const { data, error } = await supabase
@@ -62,7 +50,6 @@ export function HeroSlideshow() {
   const [index, setIndex] = useState(0);
   // Slides that have been loaded or primed for preloading
   const [loaded, setLoaded] = useState<number[]>([0, 1]);
-  const [videoDurations, setVideoDurations] = useState<Record<string, number>>({});
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -72,14 +59,6 @@ export function HeroSlideshow() {
   });
 
   const slides = useMemo<Slide[]>(() => {
-    const videoSlides = SITE_VIDEOS.map((video) => ({
-      url: video.poster,
-      alt: video.title,
-      kicker: video.kicker,
-      title: video.title,
-      text: video.description,
-      video: video.src,
-    }));
     const newsSlides = (news ?? [])
       .filter((article) => article.image_urls.length > 0)
       .map((article) => ({
@@ -89,7 +68,7 @@ export function HeroSlideshow() {
         title: article.title,
         text: article.summary ?? article.content ?? "",
       }));
-    return [...videoSlides, ...newsSlides, ...DEFAULT_SLIDES];
+    return newsSlides.length > 0 ? newsSlides : [FALLBACK_SLIDE];
   }, [news]);
 
   const go = useCallback(
@@ -122,17 +101,16 @@ export function HeroSlideshow() {
   }, [index, slides.length]);
 
   const active = useMemo(() => slides[index] ?? slides[0]!, [index, slides]);
-  const activeDuration = active.video ? (videoDurations[active.video] ?? 120000) : DURATION;
 
-  // Continuous loop that never stops. Image slides use 8 seconds; video slides
-  // stay until the video finishes. Restarted cleanly on every index change so
-  // the cadence stays consistent across mobile and desktop.
+  // Continuous loop that never stops. Each slide uses 8 seconds; restarted
+  // cleanly on every index change so the cadence stays consistent across
+  // mobile and desktop.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       go(index + 1);
-    }, activeDuration);
+    }, DURATION);
     return () => window.clearTimeout(timer);
-  }, [index, go, activeDuration]);
+  }, [index, go]);
 
   // Keyboard navigation for accessibility
   useEffect(() => {
@@ -178,44 +156,27 @@ export function HeroSlideshow() {
 
         return (
           <div
-            key={`${slide.url}-${i}`}
+            key={`${slide.url ?? "fallback"}-${i}`}
             aria-hidden={!isCurrent}
             className={cn(
               "absolute inset-0 transition-opacity duration-[1200ms] ease-in-out will-change-[opacity]",
               isCurrent ? "opacity-100 z-0" : "opacity-0 -z-10 pointer-events-none",
             )}
           >
-            {isPrimed &&
-              (slide.video ? (
-                <HeroVideo
-                  src={slide.video}
-                  poster={slide.url}
-                  active={isCurrent}
-                  onDuration={(duration) => {
-                    const src = slide.video;
-                    if (!src) return;
-                    setVideoDurations((prev) =>
-                      prev[src] === duration ? prev : { ...prev, [src]: duration },
-                    );
-                  }}
-                  onEnded={() => {
-                    if (isCurrent) go(index + 1);
-                  }}
-                />
-              ) : (
-                <img
-                  src={slide.url}
-                  alt={slide.alt}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={i === 0 ? "high" : "low"}
-                  draggable={false}
-                  className={cn(
-                    "size-full object-cover object-center transform-gpu",
-                    isCurrent && "animate-slow-zoom",
-                  )}
-                />
-              ))}
+            {isPrimed && slide.url && (
+              <img
+                src={slide.url}
+                alt={slide.alt}
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={i === 0 ? "high" : "low"}
+                draggable={false}
+                className={cn(
+                  "size-full object-cover object-center transform-gpu",
+                  isCurrent && "animate-slow-zoom",
+                )}
+              />
+            )}
             <div className="absolute inset-0 bg-hero-gradient" />
           </div>
         );
@@ -273,7 +234,7 @@ export function HeroSlideshow() {
         type="button"
         aria-label="Previous slide"
         onClick={() => go(index - 1)}
-        className="absolute top-1/2 left-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:left-6 touch-manipulation"
+        className="absolute top-1/2 left-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground transition-colors hover:bg-primary-foreground/20 sm:grid lg:left-6 touch-manipulation"
       >
         <ChevronLeft className="size-5" />
       </button>
@@ -281,7 +242,7 @@ export function HeroSlideshow() {
         type="button"
         aria-label="Next slide"
         onClick={() => go(index + 1)}
-        className="absolute top-1/2 right-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20 sm:grid lg:right-6 touch-manipulation"
+        className="absolute top-1/2 right-3 z-20 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-primary-foreground/40 text-primary-foreground transition-colors hover:bg-primary-foreground/20 sm:grid lg:right-6 touch-manipulation"
       >
         <ChevronRight className="size-5" />
       </button>
@@ -291,7 +252,7 @@ export function HeroSlideshow() {
         <div className="flex flex-1 items-center gap-2 sm:gap-2.5">
           {slides.map((slide, i) => (
             <button
-              key={`${slide.url}-${i}`}
+              key={`${slide.url ?? "fallback"}-${i}`}
               type="button"
               aria-label={`Go to slide ${i + 1}`}
               aria-current={i === index}
@@ -305,7 +266,7 @@ export function HeroSlideshow() {
                   i === index && "animate-bar",
                   i !== index && "scale-x-0",
                 )}
-                style={{ animationDuration: `${i === index ? activeDuration : DURATION}ms` }}
+                style={{ animationDuration: `${DURATION}ms` }}
               />
             </button>
           ))}
@@ -315,56 +276,3 @@ export function HeroSlideshow() {
   );
 }
 
-function HeroVideo({
-  src,
-  poster,
-  active,
-  onDuration,
-  onEnded,
-}: {
-  src: string;
-  poster: string;
-  active: boolean;
-  onDuration: (durationMs: number) => void;
-  onEnded: () => void;
-}) {
-  const ref = useRef<HTMLVideoElement>(null);
-  const wasActive = useRef(false);
-
-  useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
-
-    if (active) {
-      if (!wasActive.current) video.currentTime = 0;
-      video.muted = true;
-      void video.play().catch(() => {
-        // Autoplay can be blocked; the poster remains visible.
-      });
-    } else {
-      video.pause();
-    }
-
-    wasActive.current = active;
-  }, [active]);
-
-  return (
-    <video
-      ref={ref}
-      src={src}
-      poster={poster}
-      muted
-      playsInline
-      preload="metadata"
-      aria-hidden="true"
-      onLoadedMetadata={(e) => {
-        const duration = e.currentTarget.duration;
-        if (Number.isFinite(duration) && duration > 0) {
-          onDuration(Math.round(duration * 1000));
-        }
-      }}
-      onEnded={onEnded}
-      className="size-full object-cover object-center transform-gpu md:object-[50%_42%]"
-    />
-  );
-}
